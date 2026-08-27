@@ -65,6 +65,10 @@ export class Frac {
         return new Frac(this.d, this.n)
     }
 
+    zero(): boolean {
+        return this.n === 0n
+    }
+
     toString(): string {
         return this.d === 1n ? "" + this.n : this.n + "/" + this.d
     }
