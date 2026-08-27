@@ -95,56 +95,6 @@ export class Matrix {
         )
     }
 
-    colFind(f: (col: number) => boolean): number | null {
-        for (let i = 0; i < this.cols; i++) {
-            if (f(i)) return i
-        }
-        return null
-    }
-
-    rowFind(f: (row: number) => boolean): number | null {
-        for (let i = 0; i < this.rows; i++) {
-            if (f(i)) return i
-        }
-        return null
-    }
-
-    rowCount(f: (row: number) => boolean): number {
-        let count = 0
-
-        for (let i = 0; i < this.rows; i++) {
-            if (f(i)) count++
-        }
-
-        return count
-    }
-
-    pivotAt(row: number, col: number): boolean {
-        for (let i = 0; i < col; i++) {
-            if (!this.get(row, i).zero()) return false
-        }
-        return !this.get(row, col).zero()
-    }
-
-    /** Returns whether the step did any work. */
-    ref1(): boolean {
-        const col = this.colFind(
-            (col) => this.rowCount((row) => this.pivotAt(row, col)) >= 2,
-        )
-        if (col === null) return false
-
-        const pivotRow = this.rowFind((row) => this.pivotAt(row, col))!
-        const pivot = this.get(pivotRow, col)
-        for (let row = pivotRow + 1; row < this.rows; row++) {
-            const cell = this.get(row, col)
-            if (cell.zero()) continue
-
-            this.rowAddInto(pivotRow, cell.div(pivot).neg(), row)
-        }
-
-        return true
-    }
-
     toString() {
         const rows: string[] = Array.from<string>({ length: this.rows }).fill(
             "",
