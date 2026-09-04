@@ -1,4 +1,4 @@
-import { Module } from "./wasm-define"
+import { Module } from "./define"
 
 const wasm = new Module()
 

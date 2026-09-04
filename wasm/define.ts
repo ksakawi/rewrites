@@ -9,7 +9,7 @@ import {
     type reftype,
     type resulttype,
     type valtype,
-} from "./wasm-compile"
+} from "./compile"
 
 export class Module {
     readonly t = new Types()

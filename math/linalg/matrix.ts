@@ -19,6 +19,28 @@ export class Matrix {
         return new Matrix(data.length, data[0]!.length, data.flat())
     }
 
+    static zero(rows: number, cols: number): Matrix {
+        return new Matrix(
+            rows,
+            cols,
+            Array.from<Frac>({ length: rows * cols }).fill(Frac.ZERO),
+        )
+    }
+
+    static id(size: number): Matrix {
+        return new Matrix(
+            size,
+            size,
+            Array.from<never, Frac>(
+                { length: size * size },
+                (_, i): Frac =>
+                    i % size === (((size * size) / i) | 0) ?
+                        Frac.from(1n)
+                    :   Frac.ZERO,
+            ),
+        )
+    }
+
     readonly log: Log[] = []
 
     constructor(
@@ -95,6 +117,31 @@ export class Matrix {
         )
     }
 
+    rowScaleTo1(row: number, col: number) {
+        assert(0 <= row && row < this.rows)
+        assert(0 <= col && col < this.cols)
+        assert(!this.get(row, col).zero())
+        this.rowScale(row, this.get(row, col).inv())
+    }
+
+    mul(rhs: Matrix): Matrix {
+        assert(this.cols == rhs.rows)
+
+        const ret = Matrix.zero(this.rows, this.cols)
+
+        for (let r = 0; r < this.rows; r++) {
+            for (let c = 0; c < rhs.cols; c++) {
+                let total = Frac.ZERO
+                for (let i = 0; i < this.cols; i++) {
+                    total = total.add(this.get(r, i).add(rhs.get(i, c)))
+                }
+                ret.set(r, c, total)
+            }
+        }
+
+        return ret
+    }
+
     toString() {
         const rows: string[] = Array.from<string>({ length: this.rows }).fill(
             "",
@@ -113,3 +160,18 @@ export class Matrix {
         return rows.map((x) => x.trimEnd()).join("\n")
     }
 }
+
+const m = Matrix.from`
+    1 2 -1 0
+    2 4 -2 -1
+    -3 -5 6 1
+    -1 2 8 -2
+`
+
+m.rowNullify(0, 0, 1)
+m.rowNullify(0, 0, 2)
+m.rowNullify(0, 0, 3)
+m.rowSwap(1, 2)
+m.rowNullify(1, 1, 3)
+m.rowSwap(2, 3)
+console.log(m.toString())

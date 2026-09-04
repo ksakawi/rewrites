@@ -3,7 +3,7 @@ import { assert } from "../../nyalang/15/assert"
 export class Frac {
     static ZERO = new Frac(0n, 1n)
 
-    static from(value: bigint | Frac | string) {
+    static from(value: bigint | Frac | string): Frac {
         if (typeof value == "bigint") {
             return new Frac(value, 1n)
         } else if (typeof value == "string") {
@@ -33,7 +33,7 @@ export class Frac {
             d = -d
         }
 
-        const g = gcd(n, d)
+        const g = gcd(n < 0n ? -n : n, d)
 
         this.n = n / g
         this.d = d / g
