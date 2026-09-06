@@ -4,15 +4,26 @@ import { apply2x, apply2y } from "../2d/tform"
 
 const FONT_SIZE = 16
 
+interface GridOptions {
+    /** @default true */ x?: boolean
+    /** @default true */ xText?: boolean
+    /** @default true */ y?: boolean
+    /** @default true */ yText?: boolean
+}
+
 export class Grid extends Object2 {
+    constructor(readonly opts: GridOptions = {}) {
+        super()
+    }
+
     draw(cv: Canvas2): void {
         cv.ctx.fillStyle = "black"
         cv.ctx.strokeStyle = "white"
         cv.ctx.lineWidth = 4
         cv.ctx.font = `${FONT_SIZE}px Symbola`
 
-        drawXLines(cv)
-        drawYLines(cv)
+        if (this.opts.x !== false) drawXLines(cv, this.opts.xText ?? true)
+        if (this.opts.y !== false) drawYLines(cv, this.opts.yText ?? true)
 
         cv.ctx.globalAlpha = 1
     }
@@ -48,7 +59,10 @@ function toFixed(n: number, digits: number): string {
     )
 }
 
-function drawXLines({ height, pixelWidth, ctx, width, tol, tlo }: Canvas2) {
+function drawXLines(
+    { height, pixelWidth, ctx, width, tol, tlo }: Canvas2,
+    text: boolean,
+) {
     const [dx, tx, tr, mx] = spacing(pixelWidth)
     const xmin = Math.floor(apply2x(tol, 0) / dx)
     const xmax = Math.ceil(apply2x(tol, width) / dx)
@@ -64,6 +78,8 @@ function drawXLines({ height, pixelWidth, ctx, width, tol, tlo }: Canvas2) {
             }
         }
     }
+
+    if (!text) return
 
     const tmin = Math.ceil(apply2x(tol, 0) / tx - 0.05)
     const tmax = Math.floor(apply2x(tol, width) / tx + 0.05)
@@ -93,7 +109,10 @@ function drawXLines({ height, pixelWidth, ctx, width, tol, tlo }: Canvas2) {
     }
 }
 
-function drawYLines({ height, pixelHeight, ctx, width, tol, tlo }: Canvas2) {
+function drawYLines(
+    { height, pixelHeight, ctx, width, tol, tlo }: Canvas2,
+    text: boolean,
+) {
     const [dy, ty, tr, my] = spacing(-pixelHeight)
     const ymin = Math.floor(apply2y(tol, height) / dy)
     const ymax = Math.ceil(apply2y(tol, 0) / dy)
@@ -109,6 +128,8 @@ function drawYLines({ height, pixelHeight, ctx, width, tol, tlo }: Canvas2) {
             }
         }
     }
+
+    if (!text) return
 
     const tmin = Math.floor(apply2y(tol, height) / ty) - 1
     const tmax = Math.ceil(apply2y(tol, 0) / ty) + 1
