@@ -1,0 +1,42 @@
+(module
+  (type $bufi32 (;0;) (array (mut i32)))
+  (type $ArrayList_i32 (;1;) (struct (field $len (mut i32)) (field $buf (mut (ref $bufi32)))))
+  (type (;2;) (func (param (ref $ArrayList_i32))))
+  (func $ArrayList_i32_reserve_1 (;0;) (type 2) (param $list (ref $ArrayList_i32))
+    (local $ret (ref $bufi32))
+    local.get $list
+    struct.get $ArrayList_i32 $len
+    local.get $list
+    struct.get $ArrayList_i32 $buf
+    array.len
+    i32.lt_u
+    if ;; label = @1
+      return
+    end
+    local.get $list
+    struct.get $ArrayList_i32 $buf
+    array.len
+    if (result i32) ;; label = @1
+      local.get $list
+      struct.get $ArrayList_i32 $buf
+      array.len
+      i32.const 1
+      i32.shl
+    else
+      i32.const 1
+    end
+    array.new_default $bufi32
+    local.tee $ret
+    i32.const 0
+    local.get $list
+    struct.get $ArrayList_i32 $buf
+    i32.const 0
+    local.get $list
+    struct.get $ArrayList_i32 $buf
+    array.len
+    array.copy $bufi32 $bufi32
+    local.get $list
+    local.get $ret
+    struct.set $ArrayList_i32 $buf
+  )
+)
