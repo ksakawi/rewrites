@@ -5,7 +5,7 @@ import { apply2x, apply2y } from "../2d/tform"
 export class Relativistic extends Object2 {
     constructor(
         readonly stroke: string,
-        readonly f: (t: number) => number,
+        readonly f: (t: number, lastX: number, dt: number) => number,
     ) {
         super()
     }
@@ -20,11 +20,11 @@ export class Relativistic extends Object2 {
         const dots = new Path2D()
         let integral = 0
         const oymin = apply2y(cv.tlo, 0)
-        let lastX = this.f(oymin)
+        let lastX = this.f(0, 0, 0)
 
         for (let oy = oymin; oy >= 0; oy--) {
             const t = apply2y(cv.tol, oy)
-            const x = this.f(t)
+            const x = this.f(t, lastX, -cv.tol.sy)
             const ox = apply2x(cv.tlo, x)
             curve.lineTo(ox, oy)
 
