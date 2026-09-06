@@ -1,3 +1,5 @@
+import { randomItem } from "./random-item"
+
 type Roll = 1 | 2 | 3 | 4 | 5 | 6
 type Sum = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12
 type RowIndex = 0 | 1 | 2 | 3
@@ -83,7 +85,7 @@ function check(ret: Card[], card: Card, row: RowIndex, roll: Sum) {
         roll = 14 - roll
     }
 
-    if (card.end[row] <= roll) return
+    if (card.end[row] >= roll) return
 
     if (roll === 12) {
         ret.push(add12(card, row))
@@ -92,10 +94,10 @@ function check(ret: Card[], card: Card, row: RowIndex, roll: Sum) {
     }
 }
 
-function next1(card: Card, roll: RollCommunal): Card[] {
+function next1(card: Card, d1: Roll, d2: Roll): Card[] {
     const ret: Card[] = []
 
-    const sum = (roll.d1 + roll.d2) as Sum
+    const sum = (d1 + d2) as Sum
     check(ret, card, 0, sum)
     check(ret, card, 1, sum)
     check(ret, card, 2, sum)
@@ -104,7 +106,7 @@ function next1(card: Card, roll: RollCommunal): Card[] {
     return ret
 }
 
-function next2(card: Card, { d1, d2 }: RollCommunal, { r, y, g, b }: RollIndividual): Card[] {
+function next2(card: Card, d1: Roll, d2: Roll, r: Roll, y: Roll, g: Roll, b: Roll): Card[] {
     const ret: Card[] = []
 
     check(ret, card, 0, (d1 + r) as Sum)
@@ -119,15 +121,111 @@ function next2(card: Card, { d1, d2 }: RollCommunal, { r, y, g, b }: RollIndivid
     return ret
 }
 
-function next12(card: Card, c: RollCommunal, i: RollIndividual): Card[] {
+function next12(card: Card, d1: Roll, d2: Roll, r: Roll, y: Roll, g: Roll, b: Roll): Card[] {
     const ret: Card[] = []
     ret.push(addPenalty(card))
 
-    for (const n1 of next1(card, c)) {
-        for (const n2 of next2(n1, c, i)) {
+    for (const n1 of next1(card, d1, d2)) {
+        for (const n2 of next2(n1, d1, d2, r, y, g, b)) {
             ret.push(n2)
         }
     }
 
     return ret
 }
+
+const ROLL: Roll[] = [1, 2, 3, 4, 5, 6]
+
+const RC: RollCommunal[] = ROLL.flatMap((d1) => ROLL.map((d2) => ({ d1, d2 })))
+const RI: RollIndividual[] = ROLL.flatMap((r) =>
+    ROLL.flatMap((y) => ROLL.flatMap((g) => ROLL.flatMap((b) => ({ r, y, g, b })))),
+)
+
+interface ExecResult {
+    optimal: Card
+    expectedScore: number
+}
+
+function exec(
+    card: Card,
+    depth: number,
+    d1: Roll,
+    d2: Roll,
+    r: Roll,
+    y: Roll,
+    g: Roll,
+    b: Roll,
+): ExecResult {
+    if (isDone(card)) {
+        return { optimal: card, expectedScore: card.score }
+    }
+
+    if (depth === 0) {
+        const optimal = next12(card, d1, d2, r, y, g, b).reduce((a, b) =>
+            a.score > b.score ? a : b,
+        )
+        return { optimal, expectedScore: optimal.score }
+    }
+
+    return next12(card, d1, d2, r, y, g, b)
+        .map<ExecResult>((el) => expectedScore(el, depth - 1))
+        .reduce((a, b) => (a.expectedScore > b.expectedScore ? a : b))
+}
+
+type CacheKey = string & { __cache_key?: never }
+
+function cacheKey(el: Card): CacheKey {
+    return el.crosses.join() + "," + el.end.join(",") + "," + el.penalties
+}
+
+const CACHE: Map<CacheKey, ExecResult>[] = [
+    new Map(),
+    new Map(),
+    new Map(),
+    new Map(),
+    new Map(),
+    new Map(),
+    new Map(),
+    new Map(),
+    new Map(),
+    new Map(),
+    new Map(),
+    new Map(),
+]
+
+function expectedScore(el: Card, depth: number): ExecResult {
+    const ckey = cacheKey(el)
+
+    if (CACHE[depth]!.has(ckey)) return CACHE[depth]!.get(ckey)!
+
+    let totalScore = 0
+    let positions = 0
+
+    for (let d1 = 1; d1 <= 6; d1++)
+        for (let d2 = 1; d2 <= 6; d2++)
+            for (let r = 1; r <= 6; r++)
+                for (let y = 1; y <= 6; y++)
+                    for (let g = 1; g <= 6; g++)
+                        for (let b = 1; b <= 6; b++) {
+                            positions++
+                            const next = exec(el, depth, d1, d2, r, y, g, b)
+                            totalScore += next.expectedScore
+                        }
+
+    const ret: ExecResult = { optimal: el, expectedScore: totalScore / positions }
+    CACHE[depth]!.set(ckey, ret)
+    return ret
+}
+
+const BLANK: Card = {
+    end: [1, 1, 1, 1],
+    crosses: [0, 0, 0, 0],
+    penalties: 0,
+    score: 0,
+}
+
+const c = randomItem(RC)!
+const r = randomItem(RI)!
+
+const best = exec(BLANK, 2, c.d1, c.d2, r.r, r.y, r.g, r.b)
+console.log({ c, r, ...best })
