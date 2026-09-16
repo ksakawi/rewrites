@@ -7,26 +7,12 @@
     "experimentalOperatorPosition": "start",
     "jsdocCapitalizeDescription": false,
     "tabWidth": 4,
+    "printWidth": 100,
     "overrides": [
-        {
-            "files": "lambda-in-js.js",
-            "options": { "arrowParens": "avoid", "semi": false }
-        },
-        { "files": "five-point-conic.ts", "options": { "printWidth": 40 } },
-        {
-            "files": "block-lang/**/*",
-            "options": { "singleAttributePerLine": true }
-        },
+        { "files": "block-lang/**/*", "options": { "singleAttributePerLine": true } },
         { "files": "cv3/**/*", "options": { "printWidth": 80 } },
+        { "files": "five-point-conic.ts", "options": { "printWidth": 40 } },
         { "files": "hott/**/*", "options": { "printWidth": 110 } },
-        {
-            "files": [
-                "hott2/**/*",
-                "nyalang/14/**/*",
-                "nyalang/15/**/*",
-                "qwixx.ts"
-            ],
-            "options": { "printWidth": 100 }
-        }
+        { "files": "lambda-in-js.js", "options": { "arrowParens": "avoid", "semi": false } }
     ]
 }

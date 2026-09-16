@@ -2,7 +2,7 @@ import type { Canvas2 } from "./canvas"
 import type { Vec2 } from "./vec"
 
 export class Object2 {
-    visible = true
+    visible?: boolean
 
     draw(cv: Canvas2): void {}
 

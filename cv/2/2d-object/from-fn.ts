@@ -5,6 +5,4 @@ export class FromFn extends Object2 {
     constructor(readonly draw: (cv: Canvas2) => void) {
         super()
     }
-
-    visible = true
 }

@@ -517,7 +517,7 @@ export class Canvas2 {
         for (let i = 0; i < scene.length; i++) {
             const obj = scene[i]!
 
-            if (obj.visible) {
+            if (obj.visible ?? true) {
                 this.ctx.globalAlpha = 1
                 scene[i]!.draw(this)
             }

@@ -162,16 +162,24 @@ export class Matrix {
 }
 
 const m = Matrix.from`
-    1 2 -1 0
-    2 4 -2 -1
-    -3 -5 6 1
-    -1 2 8 -2
+    0 1 -1 1 0
+    0 1 1 0 1
+    1 -1 1 -3 2
+    1 2 -1 1 4
 `
 
-m.rowNullify(0, 0, 1)
+m.rowSwap(0, 3)
 m.rowNullify(0, 0, 2)
-m.rowNullify(0, 0, 3)
-m.rowSwap(1, 2)
+m.rowNullify(1, 1, 2)
 m.rowNullify(1, 1, 3)
-m.rowSwap(2, 3)
+m.rowNullify(2, 2, 3)
+m.rowScaleTo1(0, 0)
+m.rowScaleTo1(1, 1)
+m.rowScaleTo1(2, 2)
+m.rowScaleTo1(3, 3)
+m.rowNullify(3, 3, 2)
+m.rowNullify(3, 3, 0)
+m.rowNullify(2, 2, 1)
+m.rowNullify(2, 2, 0)
+m.rowNullify(1, 1, 0)
 console.log(m.toString())
