@@ -14,8 +14,8 @@ export class Game {
         return new Node(this, x, y)
     }
 
+    private valueCached: number | undefined
     draw(cv: Canvas2) {
-        cv.ctx.font = -0.5 * cv.tlo.sy + "px sans-serif"
         cv.ctx.fillStyle = BLACK
         cv.ctx.strokeStyle = BLACK
         cv.ctx.lineWidth = -0.1 * cv.tlo.sy
@@ -72,10 +72,40 @@ export class Game {
 
             cv.ctx.stroke()
         }
+
+        cv.ctx.font = -0.5 * cv.tlo.sy + "px Symbola"
+        cv.ctx.fillStyle = "red"
+        cv.ctx.fillText(
+            "*" + (this.valueCached ??= this.value()),
+            this.nodes[0]!.ox(cv),
+            this.nodes[0]!.oy(cv),
+        )
     }
 
     addTo(cv: Canvas2) {
         cv.push(this)
+    }
+
+    value(): number {
+        const subpositions: number[] = []
+
+        for (const el of this.nodes) {
+            if (el.fruit !== null) continue
+
+            if (el.canHave(false)) {
+                el.fruit = false
+                subpositions.push(this.value())
+                el.fruit = null
+            }
+
+            if (el.canHave(true)) {
+                el.fruit = true
+                subpositions.push(this.value())
+                el.fruit = null
+            }
+        }
+
+        for (let i = 0; ; i++) if (!subpositions.includes(i)) return i
     }
 }
 
@@ -96,6 +126,10 @@ export class Node {
     set(fruit: Fruit | null) {
         this.fruit = fruit
         return this
+    }
+
+    canHave(fruit: Fruit): boolean {
+        return !this.edges.some((x) => this.game.nodes[x]!.fruit === fruit)
     }
 
     ox(cv: Canvas2) {
@@ -164,7 +198,7 @@ export class Node {
 
     n12(n: number): Node {
         return this.fork(
-            (x) => x.line(n).set(false),
+            (x) => x.line(n).set(true),
             (x) => x.line(-2).set(false),
             (x) => x.line(1, 90).set(false),
         )
@@ -200,7 +234,19 @@ export class Node {
             return angleAverage(this.angleTo(this.edges[0]!), this.angleTo(this.edges[1]!))
         }
 
-        return Math.PI / 2
+        const possible = Array.from({ length: 60 }, (_, i) => ((i - 30) / 30) * Math.PI)
+
+        let best = 0
+        let bestAngle = 0
+
+        for (const el of possible) {
+            if (this.angleDifferenceSum(el) > best) {
+                best = this.angleDifferenceSum(el)
+                bestAngle = el
+            }
+        }
+
+        return bestAngle + Math.PI
     }
 }
 

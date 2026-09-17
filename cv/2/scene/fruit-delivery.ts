@@ -1,4 +1,4 @@
-import { Game } from "../2d-object/fruit-delivery"
+import { Game, type Fruit } from "../2d-object/fruit-delivery"
 import { Canvas2 } from "../2d/canvas"
 
 const cv = new Canvas2({ sx: 20, sy: 20, tx: 0, ty: 0 })
@@ -26,10 +26,26 @@ for (let i = 1; i <= 4; i++) {
         .game.addTo(cv)
 }
 
-new Game().push(5, 0).n12(1).game.addTo(cv)
-new Game().push(5, -3).n12(2).game.addTo(cv)
-new Game().push(5, -6).n12(3).game.addTo(cv)
-new Game().push(5, -9).n12(4).game.addTo(cv)
+const x = (x: number, y: number, i: number, f: Fruit) => {
+    const g = new Game().push(x, y).n12(4).game
+    g.addTo(cv)
+    g.nodes[i]!.fruit = f
+}
+
+for (let i = 1; i <= 7; i++) {
+    new Game()
+        .push(2, 12 - 3 * i)
+        .n12(i)
+        .game.addTo(cv)
+}
+
+x(10, 9, 0, true)
+x(10, 6, 1, true)
+x(10, 3, 1, false)
+x(10, 0, 2, false)
+x(10, -3, 2, true)
+x(10, -6, 3, true)
+x(10, -9, 5, true)
 
 new Game().push(-10, 3).loop(3).game.addTo(cv)
 new Game().push(-8, 3).loop(4).game.addTo(cv)
