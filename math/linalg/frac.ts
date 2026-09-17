@@ -44,7 +44,7 @@ export class Frac {
     }
 
     sub(rhs: Frac): Frac {
-        return new Frac(this.n * rhs.d + this.d * rhs.n, this.d * rhs.d)
+        return new Frac(this.n * rhs.d - this.d * rhs.n, this.d * rhs.d)
     }
 
     neg(): Frac {
@@ -67,6 +67,10 @@ export class Frac {
 
     zero(): boolean {
         return this.n === 0n
+    }
+
+    eq(rhs: Frac): boolean {
+        return this.n === rhs.n && this.d === rhs.d
     }
 
     toString(): string {

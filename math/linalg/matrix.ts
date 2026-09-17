@@ -1,5 +1,5 @@
 import { assert } from "../../nyalang/15/assert"
-import { Frac } from "./frac"
+import { Complex as Frac } from "./complex"
 
 export type Log =
     | { k: "rowAddInto"; v: { src: number; scale: Frac; dst: number } }
@@ -93,7 +93,7 @@ export class Matrix {
     }
 
     rowScale(row: number, scale: Frac) {
-        assert(scale.d !== 0n)
+        assert(!scale.zero())
         this.log.push({ k: "rowScale", v: { row, scale } })
 
         for (let col = 0; col < this.cols; col++) {
@@ -121,7 +121,9 @@ export class Matrix {
         this.rowScale(row, this.get(row, col).inv())
     }
 
-    nullifyAllRowsBelow(row: number, col: number) {
+    rowSolveBelow(row: number, col: number) {
+        this.rowScaleTo1(row, col)
+
         for (let i = row + 1; i < this.rows; i++) {
             if (this.get(i, col).zero()) continue
             this.rowNullify(row, col, i)
