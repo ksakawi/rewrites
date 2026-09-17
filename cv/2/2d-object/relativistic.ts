@@ -5,7 +5,7 @@ import { apply2x, apply2y } from "../2d/tform"
 export class Relativistic extends Object2 {
     constructor(
         readonly stroke: string,
-        readonly f: (t: number, lastX: number, dt: number) => number,
+        readonly f: (t: number, lastX: number, dt: number, myT: number) => number,
     ) {
         super()
     }
@@ -24,13 +24,12 @@ export class Relativistic extends Object2 {
 
         for (let oy = oymin; oy >= 0; oy--) {
             const t = apply2y(cv.tol, oy)
-            const x = this.f(t, lastX, -cv.tol.sy)
+            const x = this.f(t, lastX, -cv.tol.sy, integral)
             const ox = apply2x(cv.tlo, x)
             curve.lineTo(ox, oy)
 
             const integralStep =
-                -cv.tol.sy
-                * Math.sqrt(Math.max(0, 1 - ((x - lastX) / cv.tol.sy) ** 2))
+                -cv.tol.sy * Math.sqrt(Math.max(0, 1 - ((x - lastX) / cv.tol.sy) ** 2))
             lastX = x
 
             const nextInt = Math.floor(integral + integralStep)

@@ -20,25 +20,30 @@ export class Matrix {
     }
 
     static zero(rows: number, cols: number): Matrix {
-        return new Matrix(
-            rows,
-            cols,
-            Array.from<Frac>({ length: rows * cols }).fill(Frac.ZERO),
-        )
+        return new Matrix(rows, cols, Array.from<Frac>({ length: rows * cols }).fill(Frac.ZERO))
     }
 
     static id(size: number): Matrix {
-        return new Matrix(
-            size,
-            size,
-            Array.from<never, Frac>(
-                { length: size * size },
-                (_, i): Frac =>
-                    i % size === (((size * size) / i) | 0) ?
-                        Frac.from(1n)
-                    :   Frac.ZERO,
-            ),
-        )
+        const ret = Matrix.zero(size, size)
+        for (let i = 0; i < size; i++) {
+            ret.set(i, i, Frac.from(1n))
+        }
+        return ret
+    }
+
+    static joinIntoWider(A: Matrix, B: Matrix): Matrix {
+        assert(A.rows === B.rows)
+        const ret = Matrix.zero(A.rows, A.cols + B.cols)
+        for (let r = 0; r < ret.rows; r++) {
+            for (let c = 0; c < ret.cols; c++) {
+                if (c < A.cols) {
+                    ret.set(r, c, A.get(r, c))
+                } else {
+                    ret.set(r, c, B.get(r, c - A.cols))
+                }
+            }
+        }
+        return ret
     }
 
     readonly log: Log[] = []
@@ -70,11 +75,7 @@ export class Matrix {
         this.log.push({ k: "rowAddInto", v: { src, scale, dst } })
 
         for (let col = 0; col < this.cols; col++) {
-            this.set(
-                dst,
-                col,
-                this.get(src, col).mul(scale).add(this.get(dst, col)),
-            )
+            this.set(dst, col, this.get(src, col).mul(scale).add(this.get(dst, col)))
         }
     }
 
@@ -110,11 +111,7 @@ export class Matrix {
             return
         }
 
-        this.rowAddInto(
-            src,
-            this.get(dst, col).div(this.get(src, col)).neg(),
-            dst,
-        )
+        this.rowAddInto(src, this.get(dst, col).div(this.get(src, col)).neg(), dst)
     }
 
     rowScaleTo1(row: number, col: number) {
@@ -122,6 +119,20 @@ export class Matrix {
         assert(0 <= col && col < this.cols)
         assert(!this.get(row, col).zero())
         this.rowScale(row, this.get(row, col).inv())
+    }
+
+    nullifyAllRowsBelow(row: number, col: number) {
+        for (let i = row + 1; i < this.rows; i++) {
+            if (this.get(i, col).zero()) continue
+            this.rowNullify(row, col, i)
+        }
+    }
+
+    nullifyAllRowsAbove(row: number, col: number) {
+        for (let i = row - 1; i >= 0; i--) {
+            if (this.get(i, col).zero()) continue
+            this.rowNullify(row, col, i)
+        }
     }
 
     mul(rhs: Matrix): Matrix {
@@ -133,7 +144,7 @@ export class Matrix {
             for (let c = 0; c < rhs.cols; c++) {
                 let total = Frac.ZERO
                 for (let i = 0; i < this.cols; i++) {
-                    total = total.add(this.get(r, i).add(rhs.get(i, c)))
+                    total = total.add(this.get(r, i).mul(rhs.get(i, c)))
                 }
                 ret.set(r, c, total)
             }
@@ -142,44 +153,30 @@ export class Matrix {
         return ret
     }
 
+    sliceCols(min: number, max: number) {
+        assert(0 <= min && min <= this.cols)
+        assert(0 <= max && max <= this.cols)
+        assert(min <= max)
+        const ret = Matrix.zero(this.rows, max - min)
+        for (let r = 0; r < this.rows; r++) {
+            for (let c = 0; c < max - min; c++) {
+                ret.set(r, c, this.get(r, c + min))
+            }
+        }
+        return ret
+    }
+
     toString() {
-        const rows: string[] = Array.from<string>({ length: this.rows }).fill(
-            "",
-        )
+        const rows: string[] = Array.from<string>({ length: this.rows }).fill("")
 
         for (let col = 0; col < this.cols; col++) {
             const colAsText = Array.from({ length: this.rows }, (_, row) =>
                 this.get(row, col).toString(),
             )
             const len = colAsText.reduce((a, b) => Math.max(a, b.length), 0)
-            colAsText.forEach(
-                (text, row) => (rows[row] += text.padStart(len) + "  "),
-            )
+            colAsText.forEach((text, row) => (rows[row] += text.padStart(len) + "  "))
         }
 
         return rows.map((x) => x.trimEnd()).join("\n")
     }
 }
-
-const m = Matrix.from`
-    0 1 -1 1 0
-    0 1 1 0 1
-    1 -1 1 -3 2
-    1 2 -1 1 4
-`
-
-m.rowSwap(0, 3)
-m.rowNullify(0, 0, 2)
-m.rowNullify(1, 1, 2)
-m.rowNullify(1, 1, 3)
-m.rowNullify(2, 2, 3)
-m.rowScaleTo1(0, 0)
-m.rowScaleTo1(1, 1)
-m.rowScaleTo1(2, 2)
-m.rowScaleTo1(3, 3)
-m.rowNullify(3, 3, 2)
-m.rowNullify(3, 3, 0)
-m.rowNullify(2, 2, 1)
-m.rowNullify(2, 2, 0)
-m.rowNullify(1, 1, 0)
-console.log(m.toString())
