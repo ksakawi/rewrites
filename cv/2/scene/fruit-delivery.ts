@@ -9,7 +9,11 @@ cv.pushFn(() => {
 document.body.appendChild(cv.el)
 
 const game = new Game()
-game.push(0, 0).line(5).fruit
-game.push(0, 5).fruit = true
-game.push(0, -5).fruit = false
+
+const base = game.push(0, 0)
+
+base.line(5).set(false)
+base.line(2, 150, -150).set(false)
+base.line(1, -90).set(false)
+
 cv.push(game)

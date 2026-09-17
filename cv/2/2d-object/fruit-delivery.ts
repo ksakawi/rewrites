@@ -16,32 +16,53 @@ export class Game {
 
     draw(cv: Canvas2) {
         cv.ctx.font = -0.5 * cv.tlo.sy + "px sans-serif"
+        cv.ctx.fillStyle = BLACK
+        cv.ctx.strokeStyle = BLACK
+        cv.ctx.lineWidth = -0.1 * cv.tlo.sy
+        cv.ctx.lineCap = "round"
 
         for (const el of this.nodes) {
-            console.log(el)
-            cv.ctx.beginPath()
-
             const ox = el.ox(cv)
             const oy = el.oy(cv)
 
+            if (el.fruit !== null) {
+                const angle = el.textAngle()
+                const ax = -0.3 * Math.cos(angle) * cv.tlo.sx
+                const ay = -0.3 * Math.sin(angle) * cv.tlo.sy
+
+                cv.ctx.lineWidth = -0.05 * cv.tlo.sy
+                cv.ctx.beginPath()
+                if (el.fruit) {
+                    const len = 0.25 * cv.tlo.sy
+
+                    cv.ctx.save()
+                    cv.ctx.translate(ox + ax, oy + ay - len / 2)
+                    cv.ctx.moveTo(0, 0)
+                    cv.ctx.lineTo(0, len)
+                    cv.ctx.restore()
+                } else {
+                    cv.ctx.ellipse(
+                        ox + ax,
+                        oy + ay,
+                        -0.12 * cv.tlo.sy,
+                        -0.12 * cv.tlo.sy,
+                        0,
+                        0,
+                        2 * Math.PI,
+                    )
+                }
+                cv.ctx.stroke()
+                cv.ctx.lineWidth = -0.1 * cv.tlo.sy
+            }
+
+            cv.ctx.beginPath()
+
             if (el.edges.length === 0) {
-                cv.ctx.fillStyle = BLACK
                 const r = -0.1 * cv.tlo.sy
                 cv.ctx.ellipse(ox, oy, r, r, 0, 0, 2 * Math.PI)
                 cv.ctx.fill()
-
-                if (el.fruit !== null) {
-                    cv.ctx.textBaseline = "bottom"
-                    cv.ctx.textAlign = "center"
-                    cv.ctx.fillText(el.fruit ? "I" : "O", ox, oy + 0.1 * cv.tlo.sy)
-                }
-
                 continue
             }
-
-            cv.ctx.strokeStyle = BLACK
-            cv.ctx.lineWidth = -0.1 * cv.tlo.sy
-            cv.ctx.lineCap = "round"
 
             for (const outer of el.edges) {
                 if (el.index <= outer) continue
@@ -66,6 +87,11 @@ export class Node {
     ) {
         this.index = game.nodes.length
         game.nodes.push(this)
+    }
+
+    set(fruit: Fruit | null) {
+        this.fruit = fruit
+        return this
     }
 
     ox(cv: Canvas2) {
@@ -95,9 +121,54 @@ export class Node {
 
         for (let i = 0; i < count; i++) {
             const angle = i % 2 ? angle2 : angle1
-            base = base.push(base.x + Math.cos(angle), base.y + Math.sin(angle))
+            base = base.push(base.x + Math.cos(angle), base.y - Math.sin(angle))
         }
 
         return base
     }
+
+    /** Angle from `this` to `game.nodes[index]`. */
+    private angleTo(index: number): number {
+        const other = this.game.nodes[index]!
+        return Math.atan2(other.y - this.y, other.x - this.x)
+    }
+
+    /** Sum of differences between `angle` and angle to each adjacent node. */
+    angleDifferenceSum(angle: number): number {
+        let sum = 0
+
+        for (const el of this.edges) {
+            sum += angleDifference(angle, this.angleTo(el))
+        }
+
+        return sum
+    }
+
+    textAngle(): number {
+        if (this.edges.length === 0) {
+            return -Math.PI / 2
+        }
+
+        if (this.edges.length === 1) {
+            return this.angleTo(this.edges[0]!)
+        }
+
+        if (this.edges.length === 2) {
+            return angleAverage(this.angleTo(this.edges[0]!), this.angleTo(this.edges[1]!))
+        }
+
+        return Math.PI / 2
+    }
+}
+
+function angleDifference(a: number, b: number) {
+    const diff = Math.max(a, b) - Math.min(a, b)
+    if (diff > Math.PI) return 2 * Math.PI - diff // e.g. pi to -pi
+    return diff
+}
+
+function angleAverage(a: number, b: number) {
+    const ret = (a + b) / 2 + (Math.abs(a - b) < Math.PI ? 0 : Math.PI)
+    if (ret > Math.PI) return ret - 2 * Math.PI
+    return ret
 }
