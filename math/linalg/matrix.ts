@@ -140,7 +140,7 @@ export class Matrix {
     mul(rhs: Matrix): Matrix {
         assert(this.cols == rhs.rows)
 
-        const ret = Matrix.zero(this.rows, this.cols)
+        const ret = Matrix.zero(this.rows, rhs.cols)
 
         for (let r = 0; r < this.rows; r++) {
             for (let c = 0; c < rhs.cols; c++) {

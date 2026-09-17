@@ -1,17 +1,16 @@
 import { Matrix } from "./matrix"
 
 const A = Matrix.from`
-    0 1 -i
-    i 0 -1
-    -1 i 1
+    1 4 -1
+    2 7 -2
+    -1 -5 2
 `
 
 const M = Matrix.joinIntoWider(A, Matrix.id(A.rows))
 
-M.rowSwap(0, 1)
 M.rowSolveBelow(0, 0)
 M.rowSolveBelow(1, 1)
-M.rowSolveBelow(2, 2)
+M.nullifyAllRowsAbove(1, 1)
 M.nullifyAllRowsAbove(2, 2)
 
-console.log(M.toString())
+console.log(M.sliceCols(3, 6).toString())
