@@ -73,6 +73,10 @@ export class Game {
             cv.ctx.stroke()
         }
     }
+
+    addTo(cv: Canvas2) {
+        cv.push(this)
+    }
 }
 
 export class Node {
@@ -113,7 +117,13 @@ export class Node {
         return next
     }
 
-    line(count: number, angle1 = 30, angle2 = -30): Node {
+    line(count: number, angle1 = -30, angle2 = 30): Node {
+        if (count < 0) {
+            count = -count
+            angle1 = 180 - angle1
+            angle2 = 180 - angle2
+        }
+
         angle1 = (angle1 * Math.PI) / 180
         angle2 = (angle2 * Math.PI) / 180
 
@@ -125,6 +135,39 @@ export class Node {
         }
 
         return base
+    }
+
+    fork(...f: ((self: Node) => void)[]): Node {
+        for (const el of f) {
+            el(this)
+        }
+
+        return this
+    }
+
+    loop(count: number, initialAngle = 0, delta = 360 / count): Node {
+        initialAngle *= Math.PI / 180
+        delta *= Math.PI / 180
+
+        let base: Node = this
+
+        for (let i = 1; i < count; i++) {
+            base = base.push(
+                base.x + Math.cos(initialAngle + delta * (i - 1)),
+                base.y + Math.sin(initialAngle + delta * (i - 1)),
+            )
+        }
+
+        this.join(base)
+        return this
+    }
+
+    n12(n: number): Node {
+        return this.fork(
+            (x) => x.line(n).set(false),
+            (x) => x.line(-2).set(false),
+            (x) => x.line(1, 90).set(false),
+        )
     }
 
     /** Angle from `this` to `game.nodes[index]`. */

@@ -8,12 +8,29 @@ cv.pushFn(() => {
 })
 document.body.appendChild(cv.el)
 
-const game = new Game()
+for (let i = 0; i <= 4; i++) {
+    new Game()
+        .push(-10, -2 * i)
+        .set(false)
+        .line(i, i === 1 ? 0 : -30)
+        .set(false)
+        .game.addTo(cv)
+}
 
-const base = game.push(0, 0)
+for (let i = 1; i <= 4; i++) {
+    new Game()
+        .push(-3, -2 * i)
+        .set(false)
+        .line(i, i === 1 ? 0 : -30)
+        .set(true)
+        .game.addTo(cv)
+}
 
-base.line(5).set(false)
-base.line(2, 150, -150).set(false)
-base.line(1, -90).set(false)
+new Game().push(5, 0).n12(1).game.addTo(cv)
+new Game().push(5, -3).n12(2).game.addTo(cv)
+new Game().push(5, -6).n12(3).game.addTo(cv)
+new Game().push(5, -9).n12(4).game.addTo(cv)
 
-cv.push(game)
+new Game().push(-10, 3).loop(3).game.addTo(cv)
+new Game().push(-8, 3).loop(4).game.addTo(cv)
+new Game().push(-5.5, 3).loop(5).game.addTo(cv)
