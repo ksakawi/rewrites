@@ -96,9 +96,9 @@ abstract class Path {
 
 class Slice extends Path {
     constructor(
-        private base: Path,
-        readonly tmin: number,
-        readonly tmax: number,
+        public base: Path,
+        public tmin: number,
+        public tmax: number,
     ) {
         assert(tmin >= base.tmin)
         assert(tmax <= base.tmax)
@@ -279,8 +279,8 @@ class FlipX extends Path {
 /** Shifts the given path by an amount in space. */
 class Shift extends Path {
     constructor(
-        private base: Path,
-        private xshift: number,
+        public base: Path,
+        public xshift: number,
     ) {
         super()
         this.tmin = base.tmin
@@ -468,6 +468,8 @@ class RelativePath extends Object2 {
 
             const lightLeft_viewedAt_global = base.lightLeftAt(viewed, t)
             const lightLeft_viewedAt = viewed.tLocal(lightLeft_viewedAt_global)
+            if (lightLeft_viewedAt_global < viewed.tmin) break
+            if (lightLeft_viewedAt_global > viewed.tmax) continue
             const v = base.v(t)
             const dist_relativeToSpace = viewed.x(lightLeft_viewedAt_global) - base.x(t)
             const dist_relativeToBase = dist_relativeToSpace * Math.sqrt(1 - v ** 2)
@@ -513,15 +515,21 @@ const accelerated = base
     .join(new FlipT(base))
     .join(new Inertial(0))
 
-const earth = new Inertial(0)
+const a = new Inertial(0).slice(0, Infinity)
+const line1 = new Shift(new Inertial(-1), 5).slice(0, 5)
+const line2 = new Shift(new Inertial(1), 5).slice(0, 5)
 
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 cv.push(accelerated.absolute("green", "left", 8))
-cv.push(earth.absolute("blue", "right", -8))
+cv.push(a.absolute("blue", "right", -8))
+cv.push(line1.absolute("red", "right", -8))
+cv.push(line2.absolute("red", "right", -8))
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
 
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
-cv.push(earth.seenFrom(accelerated, "blue", "right", -8))
+cv.push(a.seenFrom(accelerated, "blue", "right", -8))
+cv.push(line1.seenFrom(accelerated, "red", "right", -8))
+cv.push(line2.seenFrom(accelerated, "red", "right", -8))
 cv.push(new Inertial(0).slice(0, Infinity).absolute("green", "left", 8))
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 
@@ -537,5 +545,18 @@ const coneStatic = new LightCone((t) => {
     return -5
 })
 
-cv.push(coneFromEarth)
-cv.push(coneStatic)
+// cv.push(coneFromEarth)
+// cv.push(coneStatic)
+
+cv.push(new LightCone(null))
+cv.push(new LightCone(null))
+
+cv.el.addEventListener("pointermove", (ev) => {
+    const lx = apply2x(cv.tol, ev.offsetX)
+    const ly = apply2y(cv.tol, ev.offsetY)
+    line1.tmax = ly
+    line2.tmax = ly
+    line1.base.xshift = ly
+    line2.base.xshift = -ly
+    cv.redraw()
+})
