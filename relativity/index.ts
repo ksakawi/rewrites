@@ -29,8 +29,12 @@ abstract class Path {
     /** Largest global t-value which should be plotted. */
     abstract tmax: number
 
-    draw(cv: Canvas2, strokeStyle: string | CanvasGradient | CanvasPattern) {
-        cv.ctx.textAlign = "left"
+    draw(
+        cv: Canvas2,
+        strokeStyle: string | CanvasGradient | CanvasPattern,
+        textAlign: CanvasTextAlign,
+    ) {
+        cv.ctx.textAlign = textAlign
         cv.ctx.textBaseline = "middle"
         cv.ctx.fillStyle = strokeStyle
         cv.ctx.font = "16px Symbola"
@@ -62,7 +66,11 @@ abstract class Path {
 
             let tLocal = this.tLocal(ly)
             if (Math.floor(tLocal / tLocalInterval) < Math.floor(lastTLocal / tLocalInterval)) {
-                cv.ctx.fillText("" + lastTLocal.toFixed(digits < 0 ? -digits : 0), ox + 8, oy)
+                cv.ctx.fillText(
+                    "" + lastTLocal.toFixed(digits < 0 ? -digits : 0),
+                    ox + (textAlign === "left" ? 8 : -8),
+                    oy,
+                )
                 dots.moveTo(ox + 4, oy)
                 dots.ellipse(ox, oy, 4, 4, 0, 0, 2 * Math.PI)
             }
@@ -86,10 +94,47 @@ abstract class Path {
         return new Join(this, next)
     }
 
-    /** What time does `this` see on `other`'s clock at global time `t`? */
-    measureClock(other: Path, t: number) {
+    /**
+     * It takes some time for a visual of `other` to get to `this`. Assuming we are on `this` at
+     * global time `t`, what global time are we receiving our image of `this` from?
+     *
+     * If there are many solutions, only one is found. There should never be multiple solutions,
+     * since that means an object went faster than light.
+     */
+    private seenAt(other: Path, t: number) {
         const x = this.x(t)
-        // goal: solve other.x()
+        // solve for `d` in `abs(other.x(t - d) - x) = d`
+        // that is, the offset in position exactly counters how long it took for us to see that position
+
+        const baseDir = Math.sign(other.x(t) - x)
+        if (baseDir === 0) return t
+
+        let dmax = 1
+        for (let i = 0; i < 308; i++) {
+            const sign = Math.sign(other.x(t - dmax) - x - baseDir * dmax)
+            if (sign === 0) return t - dmax
+            if (sign !== baseDir) break
+            dmax *= 2
+        }
+
+        let dmin = 0
+        while (dmax - dmin > 1e-3) {
+            const mid = (dmin + dmax) / 2
+            const signMid = Math.sign(other.x(t - mid) - x - baseDir * mid)
+            console.log({ baseDir, dmin, dmax, mid, signMid })
+            if (signMid === 0) return mid
+
+            if (signMid === baseDir) {
+                dmin = mid
+            } else {
+                dmax = mid
+            }
+        }
+        return t - dmin
+    }
+
+    measureClock(other: Path, tSelfLocal: number) {
+        return other.tLocal(this.seenAt(other, this.tGlobal(tSelfLocal)))
     }
 }
 
@@ -312,9 +357,12 @@ const nonlinear = base
     .join(new FlipT(base))
     .join(new Inertial(0))
 
-cv.adopt(nonlinear, (x) => x.draw(cv, "green"))
-cv.adopt(new Inertial(-0.3), (x) => x.draw(cv, "blue"))
-console.log(nonlinear.tGlobal(3.2))
+const inertial = new Inertial(-0.3)
+
+cv.adopt(nonlinear, (x) => x.draw(cv, "green", "left"))
+cv.adopt(inertial, (x) => x.draw(cv, "blue", "right"))
+
+console.log(nonlinear.measureClock(inertial, 5))
 
 const triangle = new (class extends Object2 {
     lx = 0
