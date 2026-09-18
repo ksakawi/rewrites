@@ -404,31 +404,16 @@ class LightCone extends Object2 {
     }
 }
 
-function gridTo(
-    source: Path,
-    target: Path | null,
-    color: string,
-    textAlign: CanvasTextAlign,
-    textOffset: number,
-) {
+function writeLabel(source: Path, color: string, textAlign: CanvasTextAlign, textOffset: number) {
     return (t: number, label: string) => {
         cv.ctx.strokeStyle = color
         cv.ctx.lineWidth = 1
+        cv.ctx.textAlign = textAlign
 
         const selfX = source.x(t)
         const ox = apply2x(cv.tlo, selfX)
         const oy = apply2y(cv.tlo, t)
 
-        if (target !== null) {
-            cv.ctx.beginPath()
-            cv.ctx.moveTo(ox, oy)
-
-            const measured = source.lightLeftAt(target, t)
-            cv.ctx.lineTo(apply2x(cv.tlo, target.x(measured)), apply2y(cv.tlo, measured))
-            cv.ctx.stroke()
-        }
-
-        cv.ctx.textAlign = textAlign
         cv.ctx.fillText(label, ox + textOffset, oy)
     }
 }
@@ -493,18 +478,14 @@ const nonlinear = base
 const inertial = new Inertial(0)
 
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
-cv.adopt(nonlinear, (x) => x.draw(cv, "green", gridTo(nonlinear, null, "green", "left", 8)))
-cv.adopt(inertial, (x) => x.draw(cv, "red", gridTo(inertial, null, "red", "right", -8)))
-cv.adopt(new Inertial(-0.2), (x) =>
-    x.draw(cv, "blue", gridTo(new Inertial(-0.2), null, "blue", "right", -8)),
-)
+cv.adopt(nonlinear, (x) => x.draw(cv, "green", writeLabel(nonlinear, "green", "left", 8)))
+cv.adopt(inertial, (x) => x.draw(cv, "red", writeLabel(inertial, "red", "right", -8)))
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
 
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
-cv.adopt(inertial, (x) => x.draw(cv, "green", gridTo(inertial, null, "green", "left", 8)))
+cv.adopt(inertial, (x) => x.draw(cv, "green", writeLabel(inertial, "green", "left", 8)))
 
 cv.pushFn(() => viewedFrom(nonlinear, inertial, "red"))
-cv.pushFn(() => viewedFrom(nonlinear, new Inertial(-0.2), "blue"))
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 
 cv.push(new LightCone((t) => nonlinear.x(t) + 5))
