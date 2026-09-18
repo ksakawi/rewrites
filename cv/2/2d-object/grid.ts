@@ -49,9 +49,7 @@ function toFixed(n: number, digits: number): string {
     if (expIndex == -1) return str
 
     return (
-        (+str.slice(0, expIndex)).toFixed(
-            Math.max(0, Math.floor(Math.log10(n)) - digits),
-        )
+        (+str.slice(0, expIndex)).toFixed(Math.max(0, Math.floor(Math.log10(n)) - digits))
         + "ᴇ"
         + str.slice(expIndex + 2)
         //+ "×10"
@@ -59,10 +57,7 @@ function toFixed(n: number, digits: number): string {
     )
 }
 
-function drawXLines(
-    { height, pixelWidth, ctx, width, tol, tlo }: Canvas2,
-    text: boolean,
-) {
+function drawXLines({ height, pixelWidth, ctx, width, tol, tlo }: Canvas2, text: boolean) {
     const [dx, tx, tr, mx] = spacing(pixelWidth)
     const xmin = Math.floor(apply2x(tol, 0) / dx)
     const xmax = Math.ceil(apply2x(tol, width) / dx)
@@ -109,10 +104,7 @@ function drawXLines(
     }
 }
 
-function drawYLines(
-    { height, pixelHeight, ctx, width, tol, tlo }: Canvas2,
-    text: boolean,
-) {
+function drawYLines({ height, pixelHeight, ctx, width, tol, tlo }: Canvas2, text: boolean) {
     const [dy, ty, tr, my] = spacing(-pixelHeight)
     const ymin = Math.floor(apply2y(tol, height) / dy)
     const ymax = Math.ceil(apply2y(tol, 0) / dy)
@@ -154,14 +146,9 @@ function drawYLines(
     }
 }
 
-function spacing(
+export function spacing(
     pixelSize: number,
-): [
-    space: number,
-    text: number,
-    textRound: number,
-    [multiplier: number, alpha: number][],
-] {
+): [space: number, text: number, textRound: number, [multiplier: number, alpha: number][]] {
     const log = Math.log10(pixelSize * 4)
     const exp = Math.floor(log)
     const pow = 10 ** (exp + 1)
@@ -180,12 +167,7 @@ function spacing(
     ]
 
     return diff < 1 / 2 ?
-            [
-                pow,
-                diff < 1 / 4 ? pow * 5 : pow * 10,
-                diff < 1 / 4 ? exp + 1 : exp + 2,
-                FST,
-            ]
+            [pow, diff < 1 / 4 ? pow * 5 : pow * 10, diff < 1 / 4 ? exp + 1 : exp + 2, FST]
         :   [pow * 5, diff < 3 / 4 ? pow * 10 : pow * 50, exp + 2, SND]
 }
 

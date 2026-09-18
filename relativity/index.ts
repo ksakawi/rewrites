@@ -1,4 +1,4 @@
-import { Grid } from "../cv/2/2d-object/grid"
+import { Grid, spacing } from "../cv/2/2d-object/grid"
 import { Canvas2 } from "../cv/2/2d/canvas"
 import { Object2 } from "../cv/2/2d/object"
 import { apply2x, apply2y } from "../cv/2/2d/tform"
@@ -44,17 +44,10 @@ abstract class Path {
         const ymin = Math.max(-cv.width, apply2y(cv.tlo, this.tmax))
         const ymax = Math.min(cv.height, apply2y(cv.tlo, this.tmin), apply2y(cv.tlo, 0))
 
-        const tLocalMin = this.tLocal(apply2y(cv.tol, ymax))
         const tLocalMax = this.tLocal(apply2y(cv.tol, ymin))
 
-        let tLocalIntervalRaw = (tLocalMax - tLocalMin) / 120
-        let digits = Math.ceil(Math.log10(tLocalIntervalRaw))
-        let tLocalInterval = 10 ** digits
-        if (
-            Math.ceil(Math.log10(tLocalIntervalRaw)) - Math.round(Math.log10(tLocalIntervalRaw))
-            < 0.5
-        )
-            tLocalInterval *= 2
+        const [tLocalInterval] = spacing(-cv.pixelHeight)
+        const digits = Math.floor(Math.log10(tLocalInterval))
 
         let lastTLocal = tLocalMax
         for (let oy = ymin; oy < ymax + 2; oy++) {
@@ -116,7 +109,6 @@ abstract class Path {
         while (dmax - dmin > 1e-3) {
             const mid = (dmin + dmax) / 2
             const signMid = Math.sign(other.x(t - mid) - x - baseDir * mid)
-            console.log({ baseDir, dmin, dmax, mid, signMid })
             if (signMid === 0) return mid
 
             if (signMid === baseDir) {
@@ -406,5 +398,7 @@ const nonlinear = base
 
 const inertial = new Inertial(0)
 
+cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 cv.adopt(nonlinear, (x) => x.draw(cv, "green", gridTo(nonlinear, inertial, "green", "left", 8)))
 cv.adopt(inertial, (x) => x.draw(cv, "red", gridTo(inertial, nonlinear, "red", "right", -8)))
+cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
