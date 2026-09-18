@@ -20,7 +20,7 @@ abstract class Path {
         const dots = new Path2D()
 
         const ymin = Math.max(0, apply2y(cv.tlo, this.tmax))
-        const ymax = Math.min(cv.height, apply2y(cv.tlo, this.tmin))
+        const ymax = Math.min(cv.height, apply2y(cv.tlo, this.tmin), apply2y(cv.tlo, 0))
 
         const tLocalMin = this.tLocal(apply2y(cv.tol, ymax))
         const tLocalMax = this.tLocal(apply2y(cv.tol, ymin))
@@ -35,7 +35,7 @@ abstract class Path {
             tLocalInterval *= 2
 
         let lastTLocal = tLocalMax
-        for (let oy = ymin; oy < ymax; oy++) {
+        for (let oy = ymin; oy < ymax + 2; oy++) {
             const ly = apply2y(cv.tol, oy)
             const lx = this.x(ly)
             const ox = apply2x(cv.tlo, lx)
@@ -61,6 +61,10 @@ abstract class Path {
 
     slice(tmin: number, tmax: number) {
         return new Slice(this, tmin, tmax)
+    }
+
+    join(next: Path) {
+        return new Join(this, next)
     }
 }
 
@@ -124,7 +128,28 @@ class Join extends Path {
     tmax: number
 }
 
-class ConstantAcceleration extends Path {
+class Inertial extends Path {
+    constructor(private v0: number) {
+        super()
+    }
+
+    x(t: number): number {
+        return this.v0 * t
+    }
+
+    v(t: number): number {
+        return this.v0
+    }
+
+    tLocal(t: number): number {
+        return t * Math.sqrt(1 - this.v0 ** 2)
+    }
+
+    tmin = -Infinity
+    tmax = Infinity
+}
+
+class Accelerating extends Path {
     constructor(private a: number) {
         super()
     }
@@ -145,13 +170,92 @@ class ConstantAcceleration extends Path {
     tmax: number = Infinity
 }
 
+class FlipT extends Path {
+    constructor(private base: Path) {
+        assert(base.tmin === 0)
+        assert(base.tmax !== Infinity)
+        super()
+
+        this.tmax = base.tmax
+    }
+
+    x(t: number): number {
+        return this.base.x(this.base.tmax - t)
+    }
+
+    v(t: number): number {
+        return this.base.v(this.base.tmax - t)
+    }
+
+    tLocal(t: number): number {
+        return this.base.tLocal(this.base.tmax) - this.base.tLocal(this.base.tmax - t)
+    }
+
+    tmin = 0
+    tmax: number
+}
+
+class FlipX extends Path {
+    constructor(private base: Path) {
+        super()
+        this.tmin = base.tmin
+        this.tmax = base.tmax
+    }
+
+    x(t: number): number {
+        return -this.base.x(t)
+    }
+
+    v(t: number): number {
+        return -this.base.v(t)
+    }
+
+    tLocal(t: number): number {
+        return this.base.tLocal(t)
+    }
+
+    tmin: number
+    tmax: number
+}
+
+class Shift extends Path {
+    constructor(
+        private base: Path,
+        private xshift: number,
+    ) {
+        super()
+        this.tmin = base.tmin
+        this.tmax = base.tmax
+    }
+
+    x(t: number): number {
+        return this.xshift + this.base.x(t)
+    }
+
+    v(t: number): number {
+        return this.base.v(t)
+    }
+
+    tLocal(t: number): number {
+        return this.base.tLocal(t)
+    }
+
+    tmin: number
+    tmax: number
+}
+
 const cv = new Canvas2({ sx: 10, sy: 10, tx: 0, ty: 0 })
 cv.el.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh"
 cv.push(new Grid())
 document.body.appendChild(cv.el)
 
-cv.adopt(new ConstantAcceleration(0.2), (x) => x.draw(cv, "green"))
+const base = new Accelerating(0.2).slice(0, 8.368497)
+cv.adopt(
+    base
+        .join(new FlipX(new FlipT(base)))
+        .join(new FlipX(base))
+        .join(new FlipT(base)),
+    (x) => x.draw(cv, "green"),
+)
 
-function acot(x: number): number {
-    return Math.PI / 2 - Math.atan(x)
-}
+cv.adopt(new Inertial(-0.5), (x) => x.draw(cv, "blue"))
