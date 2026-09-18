@@ -42,7 +42,8 @@ abstract class Path {
         const dots = new Path2D()
 
         const ymin = Math.max(-cv.width, apply2y(cv.tlo, this.tmax))
-        const ymax = Math.min(cv.height, apply2y(cv.tlo, this.tmin), apply2y(cv.tlo, 0))
+        // const ymax = Math.min(cv.height, apply2y(cv.tlo, this.tmin), apply2y(cv.tlo, 0))
+        const ymax = cv.height
 
         const tLocalMax = this.tLocal(apply2y(cv.tol, ymin))
 
@@ -241,6 +242,8 @@ class Accelerating extends Path {
     }
 
     tGlobal(t: number): number {
+        if (t <= -Math.PI / 2 / this.a) return NaN
+        if (t >= Math.PI / 2 / this.a) return NaN
         return Math.asinh(Math.tan(t * this.a)) / this.a
     }
 
@@ -445,7 +448,8 @@ function viewedFrom(base: Path, viewed: Path, color: string) {
     const digits = Math.floor(Math.log10(tLocalInterval))
 
     let tInertialLast = -1
-    for (let tSelf = 0; tSelf < 12; tSelf += 0.01) {
+    for (let oyR = -cv.width; oyR < cv.height; oyR++) {
+        const tSelf = apply2y(cv.tol, oyR)
         const t = base.tGlobal(tSelf)
         const tInertial = base.lightLeftAt(viewed, t)
         const vDiff = relativisticAdd(base.v(t), -viewed.v(tInertial))
