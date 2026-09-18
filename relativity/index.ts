@@ -1,5 +1,6 @@
 import { Grid } from "../cv/2/2d-object/grid"
 import { Canvas2 } from "../cv/2/2d/canvas"
+import { Object2 } from "../cv/2/2d/object"
 import { apply2x, apply2y } from "../cv/2/2d/tform"
 import { assert } from "../nyalang/15/assert"
 
@@ -250,12 +251,42 @@ cv.push(new Grid())
 document.body.appendChild(cv.el)
 
 const base = new Accelerating(0.2).slice(0, 8.368497)
+
 cv.adopt(
     base
         .join(new FlipX(new FlipT(base)))
         .join(new FlipX(base))
-        .join(new FlipT(base)),
+        .join(new FlipT(base))
+        .join(new Inertial(0)),
     (x) => x.draw(cv, "green"),
 )
 
 cv.adopt(new Inertial(-0.5), (x) => x.draw(cv, "blue"))
+
+const triangle = new (class extends Object2 {
+    lx = 0
+    ly = 0
+
+    draw(cv: Canvas2): void {
+        const ox = apply2x(cv.tlo, this.lx)
+        const oy = apply2y(cv.tlo, this.ly)
+
+        const d = Math.max(cv.width, cv.height) + 8
+        cv.ctx.beginPath()
+        cv.ctx.moveTo(-d, oy + ox + d)
+        cv.ctx.lineTo(cv.width + d, oy - cv.width - d + ox)
+        cv.ctx.lineTo(-d, oy - ox - d)
+        cv.ctx.lineTo(cv.width + d, oy + cv.width + d - ox)
+        cv.ctx.strokeStyle = "orange"
+        cv.ctx.lineWidth = 2.5
+        cv.ctx.stroke()
+        cv.ctx.fillStyle = "#f804"
+        cv.ctx.fill()
+    }
+})()
+cv.push(triangle)
+cv.el.addEventListener("pointermove", (ev) => {
+    triangle.lx = apply2x(cv.tol, ev.offsetX)
+    triangle.ly = apply2y(cv.tol, ev.offsetY)
+    cv.redraw()
+})
