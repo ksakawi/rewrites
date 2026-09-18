@@ -32,11 +32,13 @@ abstract class Path {
     draw(
         cv: Canvas2,
         strokeStyle: string | CanvasGradient | CanvasPattern,
-        tick: (tGlobal: number, label: string) => void,
+        textAlign: CanvasTextAlign,
+        textOffset: number,
     ) {
         cv.ctx.textBaseline = "middle"
         cv.ctx.fillStyle = strokeStyle
         cv.ctx.font = "16px Symbola"
+        cv.ctx.textAlign = textAlign
 
         const trace = new Path2D()
         const dots = new Path2D()
@@ -59,7 +61,8 @@ abstract class Path {
 
             let tLocal = this.tLocal(ly)
             if (Math.floor(tLocal / tLocalInterval) < Math.floor(lastTLocal / tLocalInterval)) {
-                tick(ly, "" + lastTLocal.toFixed(digits < 0 ? -digits : 0))
+                const label = lastTLocal.toFixed(digits < 0 ? -digits : 0)
+                cv.ctx.fillText(label, ox + textOffset, oy)
                 dots.moveTo(ox + 4, oy)
                 dots.ellipse(ox, oy, 4, 4, 0, 0, 2 * Math.PI)
             }
@@ -404,20 +407,6 @@ class LightCone extends Object2 {
     }
 }
 
-function writeLabel(source: Path, color: string, textAlign: CanvasTextAlign, textOffset: number) {
-    return (t: number, label: string) => {
-        cv.ctx.strokeStyle = color
-        cv.ctx.lineWidth = 1
-        cv.ctx.textAlign = textAlign
-
-        const selfX = source.x(t)
-        const ox = apply2x(cv.tlo, selfX)
-        const oy = apply2y(cv.tlo, t)
-
-        cv.ctx.fillText(label, ox + textOffset, oy)
-    }
-}
-
 function viewedFrom(base: Path, viewed: Path, color: string) {
     cv.ctx.strokeStyle = color
     cv.ctx.fillStyle = color
@@ -433,8 +422,8 @@ function viewedFrom(base: Path, viewed: Path, color: string) {
     const digits = Math.floor(Math.log10(tLocalInterval))
 
     let tInertialLast = -1
-    for (let oyR = -cv.width; oyR < cv.height; oyR++) {
-        const tSelf = apply2y(cv.tol, oyR)
+    for (let oySelf = -cv.width; oySelf < cv.height; oySelf++) {
+        const tSelf = apply2y(cv.tol, oySelf)
         const t = base.tGlobal(tSelf)
         const tInertial = base.lightLeftAt(viewed, t)
         const vDiff = relativisticAdd(base.v(t), -viewed.v(tInertial))
@@ -475,17 +464,26 @@ const nonlinear = base
     .join(new FlipT(base))
     .join(new Inertial(0))
 
-const inertial = new Inertial(0)
+const a = new Inertial(-0.7)
+const b = new Inertial(-0.5)
+const c = new Inertial(-0.3)
+const d = new Inertial(-0.1)
 
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
-cv.adopt(nonlinear, (x) => x.draw(cv, "green", writeLabel(nonlinear, "green", "left", 8)))
-cv.adopt(inertial, (x) => x.draw(cv, "red", writeLabel(inertial, "red", "right", -8)))
+cv.adopt(nonlinear, (x) => x.draw(cv, "green", "left", 8))
+cv.adopt(a, (x) => x.draw(cv, "red", "right", -8))
+cv.adopt(b, (x) => x.draw(cv, "purple", "right", -8))
+cv.adopt(c, (x) => x.draw(cv, "blue", "right", -8))
+cv.adopt(d, (x) => x.draw(cv, "#880", "right", -8))
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
 
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
-cv.adopt(inertial, (x) => x.draw(cv, "green", writeLabel(inertial, "green", "left", 8)))
+cv.adopt(new Inertial(0), (x) => x.draw(cv, "green", "left", 8))
 
-cv.pushFn(() => viewedFrom(nonlinear, inertial, "red"))
+cv.pushFn(() => viewedFrom(nonlinear, a, "red"))
+cv.pushFn(() => viewedFrom(nonlinear, b, "purple"))
+cv.pushFn(() => viewedFrom(nonlinear, c, "blue"))
+cv.pushFn(() => viewedFrom(nonlinear, d, "#880"))
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 
 cv.push(new LightCone((t) => nonlinear.x(t) + 5))
