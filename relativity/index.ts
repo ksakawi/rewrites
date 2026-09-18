@@ -85,6 +85,12 @@ abstract class Path {
     join(next: Path) {
         return new Join(this, next)
     }
+
+    /** What time does `this` see on `other`'s clock at global time `t`? */
+    measureClock(other: Path, t: number) {
+        const x = this.x(t)
+        // goal: solve other.x()
+    }
 }
 
 class Slice extends Path {
@@ -307,7 +313,7 @@ const nonlinear = base
     .join(new Inertial(0))
 
 cv.adopt(nonlinear, (x) => x.draw(cv, "green"))
-cv.adopt(new Inertial(0), (x) => x.draw(cv, "blue"))
+cv.adopt(new Inertial(-0.3), (x) => x.draw(cv, "blue"))
 console.log(nonlinear.tGlobal(3.2))
 
 const triangle = new (class extends Object2 {
@@ -321,8 +327,12 @@ const triangle = new (class extends Object2 {
         const d = Math.max(cv.width, cv.height) + 8
         cv.ctx.beginPath()
         cv.ctx.moveTo(-d, oy + ox + d)
-        cv.ctx.lineTo(cv.width + d, oy - cv.width - d + ox)
-        cv.ctx.lineTo(-d, oy - ox - d)
+        if (true) {
+            cv.ctx.lineTo(ox, oy)
+        } else {
+            cv.ctx.lineTo(cv.width + d, oy - cv.width - d + ox)
+            cv.ctx.lineTo(-d, oy - ox - d)
+        }
         cv.ctx.lineTo(cv.width + d, oy + cv.width + d - ox)
         cv.ctx.strokeStyle = "orange"
         cv.ctx.lineWidth = 2.5
