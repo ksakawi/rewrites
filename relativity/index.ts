@@ -29,55 +29,6 @@ abstract class Path {
     /** Largest global t-value which should be plotted. */
     abstract tmax: number
 
-    draw(
-        cv: Canvas2,
-        strokeStyle: string | CanvasGradient | CanvasPattern,
-        textAlign: CanvasTextAlign,
-        textOffset: number,
-    ) {
-        cv.ctx.textBaseline = "middle"
-        cv.ctx.fillStyle = strokeStyle
-        cv.ctx.font = "16px Symbola"
-        cv.ctx.textAlign = textAlign
-
-        const trace = new Path2D()
-        const dots = new Path2D()
-
-        const ymin = Math.max(-cv.width, apply2y(cv.tlo, this.tmax))
-        // const ymax = Math.min(cv.height, apply2y(cv.tlo, this.tmin), apply2y(cv.tlo, 0))
-        const ymax = cv.height
-
-        const tLocalMax = this.tLocal(apply2y(cv.tol, ymin))
-
-        const [tLocalInterval] = spacing(-cv.pixelHeight)
-        const digits = Math.floor(Math.log10(tLocalInterval))
-
-        let lastTLocal = tLocalMax
-        for (let oy = ymin; oy < ymax + 2; oy++) {
-            const ly = apply2y(cv.tol, oy)
-            const lx = this.x(ly)
-            const ox = apply2x(cv.tlo, lx)
-            trace.lineTo(ox, oy)
-
-            let tLocal = this.tLocal(ly)
-            if (Math.floor(tLocal / tLocalInterval) < Math.floor(lastTLocal / tLocalInterval)) {
-                const label = lastTLocal.toFixed(digits < 0 ? -digits : 0)
-                cv.ctx.fillText(label, ox + textOffset, oy)
-                dots.moveTo(ox + 4, oy)
-                dots.ellipse(ox, oy, 4, 4, 0, 0, 2 * Math.PI)
-            }
-            lastTLocal = tLocal
-        }
-
-        cv.ctx.lineWidth = 2.5
-        cv.ctx.strokeStyle = strokeStyle
-        cv.ctx.stroke(trace)
-
-        cv.ctx.fillStyle = "white"
-        cv.ctx.fill(dots)
-        cv.ctx.stroke(dots)
-    }
-
     slice(tmin: number, tmax: number) {
         return new Slice(this, tmin, tmax)
     }
@@ -127,6 +78,19 @@ abstract class Path {
     /** Measures the time that `this` sees on `other`'s clock when `this` is at global time `t`. */
     measureClock(other: Path, t: number) {
         return other.tLocal(this.lightLeftAt(other, t))
+    }
+
+    absolute(color: string, textAlign: CanvasTextAlign, textOffset: number): AbsolutePath {
+        return new AbsolutePath(this, color, textAlign, textOffset)
+    }
+
+    seenFrom(
+        other: Path,
+        color: string,
+        textAlign: CanvasTextAlign,
+        textOffset: number,
+    ): RelativePath {
+        return new RelativePath(other, this, color, textAlign, textOffset)
     }
 }
 
@@ -350,13 +314,18 @@ class LightCone extends Object2 {
         readonly x: ((t: number) => number) | null,
     ) {
         super()
-        this.lx = x === null ? 0 : x(0)
     }
 
     lx = 0
     ly = 0
+    private init = false
 
     draw(cv: Canvas2): void {
+        if (!this.init && this.x !== null) {
+            this.init = true
+            this.lx = this.x(this.ly)
+        }
+
         const ox = apply2x(cv.tlo, this.lx)
         const oy = apply2y(cv.tlo, this.ly)
 
@@ -407,53 +376,128 @@ class LightCone extends Object2 {
     }
 }
 
-function viewedFrom(base: Path, viewed: Path, color: string) {
-    cv.ctx.strokeStyle = color
-    cv.ctx.fillStyle = color
-    cv.ctx.lineWidth = 2.5
-    cv.ctx.lineCap = cv.ctx.lineJoin = "round"
-    cv.ctx.textAlign = "right"
-    cv.ctx.textBaseline = "middle"
-    cv.ctx.font = "16px Symbola"
-    const path = new Path2D()
-    const dots = new Path2D()
-
-    const oxSelf = apply2x(cv.tlo, 0)
-
-    // const [tLocalInterval] = spacing(-cv.pixelHeight)
-    // const digits = Math.floor(Math.log10(tLocalInterval))
-
-    // let tInertialLast = -1
-    for (let oySelf = -cv.width; oySelf < cv.height; oySelf++) {
-        const tSelf = apply2y(cv.tol, oySelf)
-        const t = base.tGlobal(tSelf)
-
-        const lightLeft_viewedAt_global = base.lightLeftAt(viewed, t)
-        const lightLeft_viewedAt = viewed.tLocal(lightLeft_viewedAt_global)
-        if (oySelf % 16 === 0) {
-            cv.ctx.fillText("" + lightLeft_viewedAt, oxSelf - 8, oySelf)
-        }
-
-        // path.lineTo(oxSelf - lightLeft_viewedAt_global * cv.tlo.sx, oySelf)
-
-        // path.lineTo(ox, oy)
-
-        // if (Math.floor(tInertial / tLocalInterval) !== Math.floor(tInertialLast / tLocalInterval)) {
-        //     dots.moveTo(ox + 4, oy)
-        //     dots.ellipse(ox, oy, 4, 4, 0, 0, 2 * Math.PI)
-        //     cv.ctx.fillText("" + tInertial.toFixed(digits < 0 ? -digits : 0), ox - 8, oy)
-        // }
-        // tInertialLast = tInertial
+class AbsolutePath extends Object2 {
+    constructor(
+        private path: Path,
+        private color: string,
+        private textAlign: CanvasTextAlign,
+        private textOffset: number,
+    ) {
+        super()
     }
 
-    cv.ctx.stroke(path)
-    cv.ctx.fillStyle = "white"
-    cv.ctx.fill(dots)
-    cv.ctx.stroke(dots)
+    draw(cv: Canvas2): void {
+        cv.ctx.textBaseline = "middle"
+        cv.ctx.fillStyle = this.color
+        cv.ctx.font = "16px Symbola"
+        cv.ctx.textAlign = this.textAlign
+
+        const trace = new Path2D()
+        const dots = new Path2D()
+
+        const ymin = Math.max(-cv.width, apply2y(cv.tlo, this.path.tmax))
+        const ymax = Math.min(cv.height, apply2y(cv.tlo, this.path.tmin))
+
+        const tLocalMax = this.path.tLocal(apply2y(cv.tol, ymin))
+
+        const [tLocalInterval] = spacing(-cv.pixelHeight)
+        const digits = Math.floor(Math.log10(tLocalInterval))
+
+        let lastTLocal = tLocalMax
+        for (let oy = ymin; oy < ymax + 2; oy++) {
+            const ly = apply2y(cv.tol, oy)
+            const lx = this.path.x(ly)
+            const ox = apply2x(cv.tlo, lx)
+            trace.lineTo(ox, oy)
+
+            let tLocal = this.path.tLocal(ly)
+            if (Math.floor(tLocal / tLocalInterval) < Math.floor(lastTLocal / tLocalInterval)) {
+                const label = lastTLocal.toFixed(digits < 0 ? -digits : 0)
+                cv.ctx.fillText(label, ox + this.textOffset, oy)
+                dots.moveTo(ox + 4, oy)
+                dots.ellipse(ox, oy, 4, 4, 0, 0, 2 * Math.PI)
+            }
+            lastTLocal = tLocal
+        }
+
+        cv.ctx.lineWidth = 2.5
+        cv.ctx.strokeStyle = this.color
+        cv.ctx.stroke(trace)
+
+        cv.ctx.fillStyle = "white"
+        cv.ctx.fill(dots)
+        cv.ctx.stroke(dots)
+    }
 }
 
-function relativisticAdd(a: number, b: number) {
-    return (a + b) / (1 + a * b)
+class RelativePath extends Object2 {
+    constructor(
+        private reference: Path,
+        private self: Path,
+        private color: string,
+        private textAlign: CanvasTextAlign,
+        private textOffset: number,
+    ) {
+        super()
+    }
+
+    draw(cv: Canvas2): void {
+        const base = this.reference
+        const viewed = this.self
+        const color = this.color
+
+        cv.ctx.strokeStyle = color
+        cv.ctx.fillStyle = color
+        cv.ctx.lineWidth = 2.5
+        cv.ctx.lineCap = cv.ctx.lineJoin = "round"
+        cv.ctx.textAlign = this.textAlign
+        cv.ctx.textBaseline = "middle"
+        cv.ctx.font = "16px Symbola"
+        const path = new Path2D()
+        const dots = new Path2D()
+
+        const oxSelf = apply2x(cv.tlo, 0)
+
+        const [tLocalInterval] = spacing(-cv.pixelHeight)
+        const digits = Math.floor(Math.log10(tLocalInterval))
+
+        let tInertialLast = -Infinity
+        for (let oySelf = -cv.width; oySelf < cv.height; oySelf++) {
+            const tSelf = apply2y(cv.tol, oySelf)
+            const t = base.tGlobal(tSelf)
+
+            const lightLeft_viewedAt_global = base.lightLeftAt(viewed, t)
+            const lightLeft_viewedAt = viewed.tLocal(lightLeft_viewedAt_global)
+            const v = base.v(t)
+            const dist_relativeToSpace = viewed.x(lightLeft_viewedAt_global) - base.x(t)
+            const dist_relativeToBase = dist_relativeToSpace * Math.sqrt(1 - v ** 2)
+
+            const oxSeen = oxSelf - dist_relativeToBase * cv.tlo.sy
+            const oySeen = oySelf + dist_relativeToBase * cv.tlo.sy
+            path.lineTo(oxSeen, oySeen)
+
+            if (
+                Math.floor(lightLeft_viewedAt / tLocalInterval)
+                !== Math.floor(tInertialLast / tLocalInterval)
+            ) {
+                const value = Math.round(lightLeft_viewedAt / tLocalInterval) * tLocalInterval
+
+                dots.moveTo(oxSeen + 4, oySeen)
+                dots.ellipse(oxSeen, oySeen, 4, 4, 0, 0, 2 * Math.PI)
+                cv.ctx.fillText(
+                    "" + value.toFixed(digits < 0 ? -digits : 0),
+                    oxSeen + this.textOffset,
+                    oySeen,
+                )
+            }
+            tInertialLast = lightLeft_viewedAt
+        }
+
+        cv.ctx.stroke(path)
+        cv.ctx.fillStyle = "white"
+        cv.ctx.fill(dots)
+        cv.ctx.stroke(dots)
+    }
 }
 
 const cv = new Canvas2({ sx: 10, sy: 10, tx: 0, ty: 5 })
@@ -463,29 +507,35 @@ document.body.appendChild(cv.el)
 
 const base = new Accelerating(0.5).slice(0, new Accelerating(0.5).tGlobal(2.5))
 
-const nonlinear = base
+const accelerated = base
     .join(new FlipX(new FlipT(base)))
     .join(new FlipX(base))
     .join(new FlipT(base))
     .join(new Inertial(0))
 
-const a = new Inertial(-0.7)
-const b = new Inertial(0)
+const earth = new Inertial(0)
 
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
-cv.adopt(nonlinear, (x) => x.draw(cv, "green", "left", 8))
-cv.adopt(a, (x) => x.draw(cv, "red", "right", -8))
-cv.adopt(b, (x) => x.draw(cv, "blue", "right", -8))
+cv.push(accelerated.absolute("green", "left", 8))
+cv.push(earth.absolute("blue", "right", -8))
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
 
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
-cv.adopt(new Inertial(0), (x) => x.draw(cv, "green", "left", 8))
-
-cv.pushFn(() => viewedFrom(nonlinear, a, "red"))
-// cv.pushFn(() => viewedFrom(nonlinear, b, "blue"))
+cv.push(earth.seenFrom(accelerated, "blue", "right", -8))
+cv.push(new Inertial(0).slice(0, Infinity).absolute("green", "left", 8))
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 
-cv.push(new LightCone((t) => nonlinear.x(t) + 5))
-cv.push(new LightCone(() => -5))
+const coneFromEarth = new LightCone((t) => {
+    coneStatic.lx = -5
+    coneStatic.ly = accelerated.tLocal(t)
+    return accelerated.x(t) + 5
+})
 
-console.log(nonlinear.lightLeftAt(a, nonlinear.tGlobal(5)))
+const coneStatic = new LightCone((t) => {
+    coneFromEarth.ly = accelerated.tGlobal(t)
+    coneFromEarth.lx = accelerated.x(coneFromEarth.ly) + 5
+    return -5
+})
+
+cv.push(coneFromEarth)
+cv.push(coneStatic)
