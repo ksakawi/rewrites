@@ -196,6 +196,7 @@ class Join extends Path {
     tmax: number
 }
 
+/** An object with constant velocity. */
 class Inertial extends Path {
     constructor(private v0: number) {
         super()
@@ -221,6 +222,7 @@ class Inertial extends Path {
     tmax = Infinity
 }
 
+/** An object with constant acceleration. */
 class Accelerating extends Path {
     constructor(private a: number) {
         super()
@@ -246,6 +248,7 @@ class Accelerating extends Path {
     tmax: number = Infinity
 }
 
+/** Reverses time along the given path. */
 class FlipT extends Path {
     constructor(private base: Path) {
         assert(base.tmin === 0)
@@ -275,6 +278,7 @@ class FlipT extends Path {
     tmax: number
 }
 
+/** Reflects the given path in space. */
 class FlipX extends Path {
     constructor(private base: Path) {
         super()
@@ -302,6 +306,7 @@ class FlipX extends Path {
     tmax: number
 }
 
+/** Shifts the given path by an amount in space. */
 class Shift extends Path {
     constructor(
         private base: Path,
@@ -332,7 +337,16 @@ class Shift extends Path {
     tmax: number
 }
 
+/** A light cone. Movable by dragging its vertex. */
 class LightCone extends Object2 {
+    constructor(
+        /** Locks the light cone to a given x-position based on its t-position. */
+        readonly x: ((t: number) => number) | null,
+    ) {
+        super()
+        this.lx = x === null ? 0 : x(0)
+    }
+
     lx = 0
     ly = 0
 
@@ -378,8 +392,12 @@ class LightCone extends Object2 {
 
     onPointerMove(ev: PEvent): void {
         if (!this.down.has(ev.pointerId)) return
-        this.lx = apply2x(ev.cv.tol, ev.offset[0])
         this.ly = apply2y(ev.cv.tol, ev.offset[1])
+        if (this.x === null) {
+            this.lx = apply2x(ev.cv.tol, ev.offset[0])
+        } else {
+            this.lx = this.x(this.ly)
+        }
     }
 }
 
@@ -411,32 +429,6 @@ function gridTo(
         cv.ctx.fillText(label, ox + textOffset, oy)
     }
 }
-
-const cv = new Canvas2({ sx: 10, sy: 10, tx: 0, ty: 5 })
-cv.el.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh"
-cv.push(new Grid({ xText: false, yText: false }))
-document.body.appendChild(cv.el)
-
-const base = new Accelerating(0.5).slice(0, new Accelerating(0.5).tGlobal(2.5))
-
-const nonlinear = base
-    .join(new FlipX(new FlipT(base)))
-    .join(new FlipX(base))
-    .join(new FlipT(base))
-    .join(new Inertial(0))
-
-const inertial = new Inertial(0)
-
-cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
-cv.adopt(nonlinear, (x) => x.draw(cv, "green", gridTo(nonlinear, null, "green", "left", 8)))
-cv.adopt(inertial, (x) => x.draw(cv, "red", gridTo(inertial, null, "red", "right", -8)))
-cv.adopt(new Inertial(-0.2), (x) =>
-    x.draw(cv, "blue", gridTo(new Inertial(-0.2), null, "blue", "right", -8)),
-)
-cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
-
-cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
-cv.adopt(inertial, (x) => x.draw(cv, "green", gridTo(inertial, null, "green", "left", 8)))
 
 function viewedFrom(base: Path, viewed: Path, color: string) {
     cv.ctx.strokeStyle = color
@@ -477,13 +469,39 @@ function viewedFrom(base: Path, viewed: Path, color: string) {
     cv.ctx.stroke(dots)
 }
 
+function relativisticAdd(a: number, b: number) {
+    return (a + b) / (1 + a * b)
+}
+
+const cv = new Canvas2({ sx: 10, sy: 10, tx: 0, ty: 5 })
+cv.el.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh"
+cv.push(new Grid({ xText: false, yText: false }))
+document.body.appendChild(cv.el)
+
+const base = new Accelerating(0.5).slice(0, new Accelerating(0.5).tGlobal(2.5))
+
+const nonlinear = base
+    .join(new FlipX(new FlipT(base)))
+    .join(new FlipX(base))
+    .join(new FlipT(base))
+    .join(new Inertial(0))
+
+const inertial = new Inertial(0)
+
+cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
+cv.adopt(nonlinear, (x) => x.draw(cv, "green", gridTo(nonlinear, null, "green", "left", 8)))
+cv.adopt(inertial, (x) => x.draw(cv, "red", gridTo(inertial, null, "red", "right", -8)))
+cv.adopt(new Inertial(-0.2), (x) =>
+    x.draw(cv, "blue", gridTo(new Inertial(-0.2), null, "blue", "right", -8)),
+)
+cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
+
+cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
+cv.adopt(inertial, (x) => x.draw(cv, "green", gridTo(inertial, null, "green", "left", 8)))
+
 cv.pushFn(() => viewedFrom(nonlinear, inertial, "red"))
 cv.pushFn(() => viewedFrom(nonlinear, new Inertial(-0.2), "blue"))
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 
-cv.push(new LightCone())
-cv.push(new LightCone())
-
-function relativisticAdd(a: number, b: number) {
-    return (a + b) / (1 + a * b)
-}
+cv.push(new LightCone((t) => nonlinear.x(t) + 5))
+cv.push(new LightCone((t) => -5))
