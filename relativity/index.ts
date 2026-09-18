@@ -418,27 +418,32 @@ function viewedFrom(base: Path, viewed: Path, color: string) {
     const path = new Path2D()
     const dots = new Path2D()
 
-    const [tLocalInterval] = spacing(-cv.pixelHeight)
-    const digits = Math.floor(Math.log10(tLocalInterval))
+    const oxSelf = apply2x(cv.tlo, 0)
 
-    let tInertialLast = -1
+    // const [tLocalInterval] = spacing(-cv.pixelHeight)
+    // const digits = Math.floor(Math.log10(tLocalInterval))
+
+    // let tInertialLast = -1
     for (let oySelf = -cv.width; oySelf < cv.height; oySelf++) {
         const tSelf = apply2y(cv.tol, oySelf)
         const t = base.tGlobal(tSelf)
-        const tInertial = base.lightLeftAt(viewed, t)
-        const vDiff = relativisticAdd(base.v(t), -viewed.v(tInertial))
-        const scale = Math.sqrt(1 - vDiff ** 2)
-        const xSeen = (viewed.x(tInertial) - base.x(t)) * scale
-        const ox = apply2x(cv.tlo, xSeen)
-        const oy = apply2y(cv.tlo, tSelf + xSeen)
-        path.lineTo(ox, oy)
 
-        if (Math.floor(tInertial / tLocalInterval) !== Math.floor(tInertialLast / tLocalInterval)) {
-            dots.moveTo(ox + 4, oy)
-            dots.ellipse(ox, oy, 4, 4, 0, 0, 2 * Math.PI)
-            cv.ctx.fillText("" + tInertial.toFixed(digits < 0 ? -digits : 0), ox - 8, oy)
+        const lightLeft_viewedAt_global = base.lightLeftAt(viewed, t)
+        const lightLeft_viewedAt = viewed.tLocal(lightLeft_viewedAt_global)
+        if (oySelf % 16 === 0) {
+            cv.ctx.fillText("" + lightLeft_viewedAt, oxSelf - 8, oySelf)
         }
-        tInertialLast = tInertial
+
+        // path.lineTo(oxSelf - lightLeft_viewedAt_global * cv.tlo.sx, oySelf)
+
+        // path.lineTo(ox, oy)
+
+        // if (Math.floor(tInertial / tLocalInterval) !== Math.floor(tInertialLast / tLocalInterval)) {
+        //     dots.moveTo(ox + 4, oy)
+        //     dots.ellipse(ox, oy, 4, 4, 0, 0, 2 * Math.PI)
+        //     cv.ctx.fillText("" + tInertial.toFixed(digits < 0 ? -digits : 0), ox - 8, oy)
+        // }
+        // tInertialLast = tInertial
     }
 
     cv.ctx.stroke(path)
@@ -465,26 +470,22 @@ const nonlinear = base
     .join(new Inertial(0))
 
 const a = new Inertial(-0.7)
-const b = new Inertial(-0.5)
-const c = new Inertial(-0.3)
-const d = new Inertial(-0.1)
+const b = new Inertial(0)
 
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 cv.adopt(nonlinear, (x) => x.draw(cv, "green", "left", 8))
 cv.adopt(a, (x) => x.draw(cv, "red", "right", -8))
-cv.adopt(b, (x) => x.draw(cv, "purple", "right", -8))
-cv.adopt(c, (x) => x.draw(cv, "blue", "right", -8))
-cv.adopt(d, (x) => x.draw(cv, "#880", "right", -8))
+cv.adopt(b, (x) => x.draw(cv, "blue", "right", -8))
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
 
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
 cv.adopt(new Inertial(0), (x) => x.draw(cv, "green", "left", 8))
 
 cv.pushFn(() => viewedFrom(nonlinear, a, "red"))
-cv.pushFn(() => viewedFrom(nonlinear, b, "purple"))
-cv.pushFn(() => viewedFrom(nonlinear, c, "blue"))
-cv.pushFn(() => viewedFrom(nonlinear, d, "#880"))
+// cv.pushFn(() => viewedFrom(nonlinear, b, "blue"))
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 
 cv.push(new LightCone((t) => nonlinear.x(t) + 5))
-cv.push(new LightCone((t) => -5))
+cv.push(new LightCone(() => -5))
+
+console.log(nonlinear.lightLeftAt(a, nonlinear.tGlobal(5)))
