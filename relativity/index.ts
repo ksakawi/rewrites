@@ -430,13 +430,17 @@ const inertial = new Inertial(0)
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 cv.adopt(nonlinear, (x) => x.draw(cv, "green", gridTo(nonlinear, inertial, "green", "left", 8)))
 cv.adopt(inertial, (x) => x.draw(cv, "red", gridTo(inertial, nonlinear, "red", "right", -8)))
+cv.adopt(new Inertial(-0.2), (x) =>
+    x.draw(cv, "blue", gridTo(new Inertial(-0.2), null, "blue", "right", -8)),
+)
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
 
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
 cv.adopt(inertial, (x) => x.draw(cv, "green", gridTo(inertial, null, "green", "left", 8)))
-cv.pushFn(() => {
-    cv.ctx.strokeStyle = "red"
-    cv.ctx.fillStyle = "red"
+
+function viewedFrom(base: Path, viewed: Path, color: string) {
+    cv.ctx.strokeStyle = color
+    cv.ctx.fillStyle = color
     cv.ctx.lineWidth = 2.5
     cv.ctx.lineCap = cv.ctx.lineJoin = "round"
     cv.ctx.textAlign = "right"
@@ -450,11 +454,11 @@ cv.pushFn(() => {
 
     let tInertialLast = -1
     for (let tSelf = 0; tSelf < 12; tSelf += 0.01) {
-        const t = nonlinear.tGlobal(tSelf)
-        const tInertial = nonlinear.lightLeftAt(inertial, t)
-        const vDiff = nonlinear.v(t)
+        const t = base.tGlobal(tSelf)
+        const tInertial = base.lightLeftAt(viewed, t)
+        const vDiff = relativisticAdd(base.v(t), -viewed.v(tInertial))
         const scale = Math.sqrt(1 - vDiff ** 2)
-        const xSeen = (inertial.x(tInertial) - nonlinear.x(t)) * scale
+        const xSeen = (viewed.x(tInertial) - base.x(t)) * scale
         const ox = apply2x(cv.tlo, xSeen)
         const oy = apply2y(cv.tlo, tSelf + xSeen)
         path.lineTo(ox, oy)
@@ -471,8 +475,15 @@ cv.pushFn(() => {
     cv.ctx.fillStyle = "white"
     cv.ctx.fill(dots)
     cv.ctx.stroke(dots)
-})
+}
+
+cv.pushFn(() => viewedFrom(nonlinear, inertial, "red"))
+cv.pushFn(() => viewedFrom(nonlinear, new Inertial(-0.2), "blue"))
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 
 cv.push(new LightCone())
 cv.push(new LightCone())
+
+function relativisticAdd(a: number, b: number) {
+    return (a + b) / (1 + a * b)
+}
