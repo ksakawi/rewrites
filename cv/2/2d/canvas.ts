@@ -126,6 +126,10 @@ export class Canvas2 {
         this.push(new FromFn(draw))
     }
 
+    adopt<T>(value: T, draw: (value: T, cv: Canvas2) => void) {
+        this.push(new FromFn((cv) => draw(value, cv)))
+    }
+
     #target(
         event: PEvent,
     ):
@@ -272,10 +276,7 @@ export class Canvas2 {
                 tp.x = x
                 tp.y = y
 
-                if (
-                    !this.#touchesMoved
-                    && Math.hypot(x - tp.ox, y - tp.oy) > 16 / this.#oh
-                ) {
+                if (!this.#touchesMoved && Math.hypot(x - tp.ox, y - tp.oy) > 16 / this.#oh) {
                     this.#touchesMoved = true
                 }
 
@@ -476,9 +477,7 @@ export class Canvas2 {
         const { sx, sy, tx, ty } = this.#ul0
 
         if (b) {
-            const scale =
-                Math.hypot(a.ox - b.ox, a.oy - b.oy)
-                / Math.hypot(a.x - b.x, a.y - b.y)
+            const scale = Math.hypot(a.ox - b.ox, a.oy - b.oy) / Math.hypot(a.x - b.x, a.y - b.y)
 
             this.#ul = {
                 sx: sx * scale,
