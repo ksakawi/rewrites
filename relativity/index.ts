@@ -417,7 +417,7 @@ cv.el.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh"
 cv.push(new Grid({ xText: false, yText: false }))
 document.body.appendChild(cv.el)
 
-const base = new Accelerating(0.5).slice(0, 3)
+const base = new Accelerating(0.5).slice(0, new Accelerating(0.5).tGlobal(2.5))
 
 const nonlinear = base
     .join(new FlipX(new FlipT(base)))
@@ -438,6 +438,7 @@ cv.pushFn(() => {
     cv.ctx.strokeStyle = "red"
     cv.ctx.fillStyle = "red"
     cv.ctx.lineWidth = 2.5
+    cv.ctx.lineCap = cv.ctx.lineJoin = "round"
     cv.ctx.textAlign = "right"
     cv.ctx.textBaseline = "middle"
     cv.ctx.font = "16px Symbola"
@@ -448,14 +449,14 @@ cv.pushFn(() => {
     const digits = Math.floor(Math.log10(tLocalInterval))
 
     let tInertialLast = -1
-    for (let tSelf = 0; tSelf < 10; tSelf += 0.01) {
+    for (let tSelf = 0; tSelf < 12; tSelf += 0.01) {
         const t = nonlinear.tGlobal(tSelf)
         const tInertial = nonlinear.lightLeftAt(inertial, t)
         const vDiff = nonlinear.v(t)
         const scale = Math.sqrt(1 - vDiff ** 2)
         const xSeen = (inertial.x(tInertial) - nonlinear.x(t)) * scale
         const ox = apply2x(cv.tlo, xSeen)
-        const oy = apply2y(cv.tlo, tSelf)
+        const oy = apply2y(cv.tlo, tSelf + xSeen)
         path.lineTo(ox, oy)
 
         if (Math.floor(tInertial / tLocalInterval) !== Math.floor(tInertialLast / tLocalInterval)) {
@@ -473,4 +474,5 @@ cv.pushFn(() => {
 })
 cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 
+cv.push(new LightCone())
 cv.push(new LightCone())
