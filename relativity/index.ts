@@ -1,6 +1,6 @@
 import { Grid, spacing } from "../cv/2/2d-object/grid"
 import { Canvas2 } from "../cv/2/2d/canvas"
-import { Object2 } from "../cv/2/2d/object"
+import { Object2, type PEvent } from "../cv/2/2d/object"
 import { apply2x, apply2y } from "../cv/2/2d/tform"
 import { assert } from "../nyalang/15/assert"
 
@@ -356,11 +356,36 @@ class LightCone extends Object2 {
         cv.ctx.fillStyle = "#f804"
         cv.ctx.fill()
     }
+
+    includes(ev: PEvent): boolean {
+        return (
+            Math.hypot(
+                ev.offset[0] - apply2x(ev.cv.tlo, this.lx),
+                ev.offset[1] - apply2y(ev.cv.tlo, this.ly),
+            ) < 24
+        )
+    }
+
+    private down = new Set<number>()
+
+    onPointerDown(ev: PEvent): void {
+        this.down.add(ev.pointerId)
+    }
+
+    onPointerUp(ev: PEvent): void {
+        this.down.delete(ev.pointerId)
+    }
+
+    onPointerMove(ev: PEvent): void {
+        if (!this.down.has(ev.pointerId)) return
+        this.lx = apply2x(ev.cv.tol, ev.offset[0])
+        this.ly = apply2y(ev.cv.tol, ev.offset[1])
+    }
 }
 
 function gridTo(
     source: Path,
-    target: Path,
+    target: Path | null,
     color: string,
     textAlign: CanvasTextAlign,
     textOffset: number,
@@ -368,22 +393,26 @@ function gridTo(
     return (t: number, label: string) => {
         cv.ctx.strokeStyle = color
         cv.ctx.lineWidth = 1
-        cv.ctx.beginPath()
 
         const selfX = source.x(t)
         const ox = apply2x(cv.tlo, selfX)
         const oy = apply2y(cv.tlo, t)
-        cv.ctx.moveTo(ox, oy)
-        const measured = source.lightLeftAt(target, t)
-        cv.ctx.lineTo(apply2x(cv.tlo, target.x(measured)), apply2y(cv.tlo, measured))
-        cv.ctx.stroke()
+
+        if (target !== null) {
+            cv.ctx.beginPath()
+            cv.ctx.moveTo(ox, oy)
+
+            const measured = source.lightLeftAt(target, t)
+            cv.ctx.lineTo(apply2x(cv.tlo, target.x(measured)), apply2y(cv.tlo, measured))
+            cv.ctx.stroke()
+        }
 
         cv.ctx.textAlign = textAlign
         cv.ctx.fillText(label, ox + textOffset, oy)
     }
 }
 
-const cv = new Canvas2({ sx: 10, sy: 10, tx: 0, ty: 0 })
+const cv = new Canvas2({ sx: 10, sy: 10, tx: 0, ty: 5 })
 cv.el.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh"
 cv.push(new Grid({ xText: false, yText: false }))
 document.body.appendChild(cv.el)
@@ -402,3 +431,46 @@ cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
 cv.adopt(nonlinear, (x) => x.draw(cv, "green", gridTo(nonlinear, inertial, "green", "left", 8)))
 cv.adopt(inertial, (x) => x.draw(cv, "red", gridTo(inertial, nonlinear, "red", "right", -8)))
 cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
+
+cv.pushFn(() => cv.ctx.translate(-cv.tlo.sx * 5, 0))
+cv.adopt(inertial, (x) => x.draw(cv, "green", gridTo(inertial, null, "green", "left", 8)))
+cv.pushFn(() => {
+    cv.ctx.strokeStyle = "red"
+    cv.ctx.fillStyle = "red"
+    cv.ctx.lineWidth = 2.5
+    cv.ctx.textAlign = "right"
+    cv.ctx.textBaseline = "middle"
+    cv.ctx.font = "16px Symbola"
+    const path = new Path2D()
+    const dots = new Path2D()
+
+    const [tLocalInterval] = spacing(-cv.pixelHeight)
+    const digits = Math.floor(Math.log10(tLocalInterval))
+
+    let tInertialLast = -1
+    for (let tSelf = 0; tSelf < 10; tSelf += 0.01) {
+        const t = nonlinear.tGlobal(tSelf)
+        const tInertial = nonlinear.lightLeftAt(inertial, t)
+        const vDiff = nonlinear.v(t)
+        const scale = Math.sqrt(1 - vDiff ** 2)
+        const xSeen = (inertial.x(tInertial) - nonlinear.x(t)) * scale
+        const ox = apply2x(cv.tlo, xSeen)
+        const oy = apply2y(cv.tlo, tSelf)
+        path.lineTo(ox, oy)
+
+        if (Math.floor(tInertial / tLocalInterval) !== Math.floor(tInertialLast / tLocalInterval)) {
+            dots.moveTo(ox + 4, oy)
+            dots.ellipse(ox, oy, 4, 4, 0, 0, 2 * Math.PI)
+            cv.ctx.fillText("" + tInertial.toFixed(digits < 0 ? -digits : 0), ox - 8, oy)
+        }
+        tInertialLast = tInertial
+    }
+
+    cv.ctx.stroke(path)
+    cv.ctx.fillStyle = "white"
+    cv.ctx.fill(dots)
+    cv.ctx.stroke(dots)
+})
+cv.pushFn(() => cv.ctx.translate(cv.tlo.sx * 5, 0))
+
+cv.push(new LightCone())
