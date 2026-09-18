@@ -4,11 +4,29 @@ import { Object2 } from "../cv/2/2d/object"
 import { apply2x, apply2y } from "../cv/2/2d/tform"
 import { assert } from "../nyalang/15/assert"
 
+/**
+ * Terminology:
+ *
+ * - Global time means the base time in the graph.
+ * - Local time means the time as measured by a clock on this `Path`.
+ */
 abstract class Path {
+    /** Position at the given global time. */
     abstract x(t: number): number
+
+    /** Velocity at the given global time. */
     abstract v(t: number): number
+
+    /** Returns what this path's clock reads at the given global time. */
     abstract tLocal(t: number): number
+
+    /** Returns what the global clock reads when this path has a particular local time. */
+    abstract tGlobal(t: number): number
+
+    /** Smallest global t-value which should be plotted. */
     abstract tmin: number
+
+    /** Largest global t-value which should be plotted. */
     abstract tmax: number
 
     draw(cv: Canvas2, strokeStyle: string | CanvasGradient | CanvasPattern) {
@@ -92,6 +110,10 @@ class Slice extends Path {
     tLocal(t: number): number {
         return this.base.tLocal(t)
     }
+
+    tGlobal(t: number): number {
+        return this.base.tGlobal(t)
+    }
 }
 
 /**
@@ -125,6 +147,12 @@ class Join extends Path {
             :   this.rhs.tLocal(t - this.lhs.tmax) + this.lhs.tLocal(this.lhs.tmax)
     }
 
+    tGlobal(t: number): number {
+        return t <= this.lhs.tLocal(this.lhs.tmax) ?
+                this.lhs.tGlobal(t)
+            :   this.rhs.tGlobal(t - this.lhs.tLocal(this.lhs.tmax)) + this.lhs.tmax
+    }
+
     tmin: number
     tmax: number
 }
@@ -146,6 +174,10 @@ class Inertial extends Path {
         return t * Math.sqrt(1 - this.v0 ** 2)
     }
 
+    tGlobal(t: number): number {
+        return t / Math.sqrt(1 - this.v0 ** 2)
+    }
+
     tmin = -Infinity
     tmax = Infinity
 }
@@ -165,6 +197,10 @@ class Accelerating extends Path {
 
     tLocal(t: number): number {
         return Math.atan(Math.sinh(this.a * t)) / this.a
+    }
+
+    tGlobal(t: number): number {
+        return Math.asinh(Math.tan(t * this.a)) / this.a
     }
 
     tmin: number = -Infinity
@@ -192,6 +228,10 @@ class FlipT extends Path {
         return this.base.tLocal(this.base.tmax) - this.base.tLocal(this.base.tmax - t)
     }
 
+    tGlobal(t: number): number {
+        return this.base.tmax - this.base.tGlobal(this.base.tLocal(this.base.tmax) - t)
+    }
+
     tmin = 0
     tmax: number
 }
@@ -213,6 +253,10 @@ class FlipX extends Path {
 
     tLocal(t: number): number {
         return this.base.tLocal(t)
+    }
+
+    tGlobal(t: number): number {
+        return this.base.tGlobal(t)
     }
 
     tmin: number
@@ -241,6 +285,10 @@ class Shift extends Path {
         return this.base.tLocal(t)
     }
 
+    tGlobal(t: number): number {
+        return this.base.tGlobal(t)
+    }
+
     tmin: number
     tmax: number
 }
@@ -252,16 +300,15 @@ document.body.appendChild(cv.el)
 
 const base = new Accelerating(0.2).slice(0, 8.368497)
 
-cv.adopt(
-    base
-        .join(new FlipX(new FlipT(base)))
-        .join(new FlipX(base))
-        .join(new FlipT(base))
-        .join(new Inertial(0)),
-    (x) => x.draw(cv, "green"),
-)
+const nonlinear = base
+    .join(new FlipX(new FlipT(base)))
+    .join(new FlipX(base))
+    .join(new FlipT(base))
+    .join(new Inertial(0))
 
-cv.adopt(new Inertial(-0.5), (x) => x.draw(cv, "blue"))
+cv.adopt(nonlinear, (x) => x.draw(cv, "green"))
+cv.adopt(new Inertial(0), (x) => x.draw(cv, "blue"))
+console.log(nonlinear.tGlobal(3.2))
 
 const triangle = new (class extends Object2 {
     lx = 0
