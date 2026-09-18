@@ -32,9 +32,8 @@ abstract class Path {
     draw(
         cv: Canvas2,
         strokeStyle: string | CanvasGradient | CanvasPattern,
-        textAlign: CanvasTextAlign,
+        tick: (tGlobal: number, label: string) => void,
     ) {
-        cv.ctx.textAlign = textAlign
         cv.ctx.textBaseline = "middle"
         cv.ctx.fillStyle = strokeStyle
         cv.ctx.font = "16px Symbola"
@@ -42,13 +41,13 @@ abstract class Path {
         const trace = new Path2D()
         const dots = new Path2D()
 
-        const ymin = Math.max(0, apply2y(cv.tlo, this.tmax))
+        const ymin = Math.max(-cv.width, apply2y(cv.tlo, this.tmax))
         const ymax = Math.min(cv.height, apply2y(cv.tlo, this.tmin), apply2y(cv.tlo, 0))
 
         const tLocalMin = this.tLocal(apply2y(cv.tol, ymax))
         const tLocalMax = this.tLocal(apply2y(cv.tol, ymin))
 
-        let tLocalIntervalRaw = (tLocalMax - tLocalMin) / 50
+        let tLocalIntervalRaw = (tLocalMax - tLocalMin) / 120
         let digits = Math.ceil(Math.log10(tLocalIntervalRaw))
         let tLocalInterval = 10 ** digits
         if (
@@ -66,11 +65,7 @@ abstract class Path {
 
             let tLocal = this.tLocal(ly)
             if (Math.floor(tLocal / tLocalInterval) < Math.floor(lastTLocal / tLocalInterval)) {
-                cv.ctx.fillText(
-                    "" + lastTLocal.toFixed(digits < 0 ? -digits : 0),
-                    ox + (textAlign === "left" ? 8 : -8),
-                    oy,
-                )
+                tick(ly, "" + lastTLocal.toFixed(digits < 0 ? -digits : 0))
                 dots.moveTo(ox + 4, oy)
                 dots.ellipse(ox, oy, 4, 4, 0, 0, 2 * Math.PI)
             }
@@ -101,7 +96,7 @@ abstract class Path {
      * If there are many solutions, only one is found. There should never be multiple solutions,
      * since that means an object went faster than light.
      */
-    private seenAt(other: Path, t: number) {
+    lightLeftAt(other: Path, t: number) {
         const x = this.x(t)
         // solve for `d` in `abs(other.x(t - d) - x) = d`
         // that is, the offset in position exactly counters how long it took for us to see that position
@@ -133,8 +128,9 @@ abstract class Path {
         return t - dmin
     }
 
-    measureClock(other: Path, tSelfLocal: number) {
-        return other.tLocal(this.seenAt(other, this.tGlobal(tSelfLocal)))
+    /** Measures the time that `this` sees on `other`'s clock when `this` is at global time `t`. */
+    measureClock(other: Path, t: number) {
+        return other.tLocal(this.lightLeftAt(other, t))
     }
 }
 
@@ -344,12 +340,37 @@ class Shift extends Path {
     tmax: number
 }
 
+function gridTo(
+    source: Path,
+    target: Path,
+    color: string,
+    textAlign: CanvasTextAlign,
+    textOffset: number,
+) {
+    return (t: number, label: string) => {
+        cv.ctx.strokeStyle = color
+        cv.ctx.lineWidth = 1
+        cv.ctx.beginPath()
+
+        const selfX = source.x(t)
+        const ox = apply2x(cv.tlo, selfX)
+        const oy = apply2y(cv.tlo, t)
+        cv.ctx.moveTo(ox, oy)
+        const measured = source.lightLeftAt(target, t)
+        cv.ctx.lineTo(apply2x(cv.tlo, target.x(measured)), apply2y(cv.tlo, measured))
+        cv.ctx.stroke()
+
+        cv.ctx.textAlign = textAlign
+        cv.ctx.fillText(label, ox + textOffset, oy)
+    }
+}
+
 const cv = new Canvas2({ sx: 10, sy: 10, tx: 0, ty: 0 })
 cv.el.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh"
-cv.push(new Grid())
+cv.push(new Grid({ xText: false, yText: false }))
 document.body.appendChild(cv.el)
 
-const base = new Accelerating(0.2).slice(0, 8.368497)
+const base = new Accelerating(0.5).slice(0, 3)
 
 const nonlinear = base
     .join(new FlipX(new FlipT(base)))
@@ -357,12 +378,10 @@ const nonlinear = base
     .join(new FlipT(base))
     .join(new Inertial(0))
 
-const inertial = new Inertial(-0.3)
+const inertial = new Inertial(0)
 
-cv.adopt(nonlinear, (x) => x.draw(cv, "green", "left"))
-cv.adopt(inertial, (x) => x.draw(cv, "blue", "right"))
-
-console.log(nonlinear.measureClock(inertial, 5))
+cv.adopt(nonlinear, (x) => x.draw(cv, "green", gridTo(nonlinear, inertial, "green", "left", 8)))
+cv.adopt(inertial, (x) => x.draw(cv, "red", gridTo(inertial, nonlinear, "red", "right", -8)))
 
 const triangle = new (class extends Object2 {
     lx = 0
@@ -389,9 +408,9 @@ const triangle = new (class extends Object2 {
         cv.ctx.fill()
     }
 })()
-cv.push(triangle)
-cv.el.addEventListener("pointermove", (ev) => {
-    triangle.lx = apply2x(cv.tol, ev.offsetX)
-    triangle.ly = apply2y(cv.tol, ev.offsetY)
-    cv.redraw()
-})
+// cv.push(triangle)
+// cv.el.addEventListener("pointermove", (ev) => {
+//     triangle.lx = apply2x(cv.tol, ev.offsetX)
+//     triangle.ly = apply2y(cv.tol, ev.offsetY)
+//     cv.redraw()
+// })
