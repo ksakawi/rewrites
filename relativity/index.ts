@@ -340,7 +340,7 @@ class Shift extends Path {
     tmax: number
 }
 
-class Triangle extends Object2 {
+class LightCone extends Object2 {
     lx = 0
     ly = 0
 
@@ -408,11 +408,3 @@ const inertial = new Inertial(0)
 
 cv.adopt(nonlinear, (x) => x.draw(cv, "green", gridTo(nonlinear, inertial, "green", "left", 8)))
 cv.adopt(inertial, (x) => x.draw(cv, "red", gridTo(inertial, nonlinear, "red", "right", -8)))
-
-// const triangle = new Triangle()
-// cv.push(triangle)
-// cv.el.addEventListener("pointermove", (ev) => {
-//     triangle.lx = apply2x(cv.tol, ev.offsetX)
-//     triangle.ly = apply2y(cv.tol, ev.offsetY)
-//     cv.redraw()
-// })
