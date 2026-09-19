@@ -23,7 +23,11 @@ export function drawPath(cv: Canvas2, path: Path, color: string, textAlign: "lef
         if (oy % 20 === 0) {
             holes.moveTo(ox + 3, oy)
             holes.ellipse(ox, oy, 3, 3, 0, 0, 2 * Math.PI)
-            cv.ctx.fillText("" + path.clock(t).toFixed(2), ox + textOffset, oy)
+            cv.ctx.fillText(
+                "" + path.clock(t).toFixed(2) + " — " + path.fromClock(path.clock(t)).toFixed(2),
+                ox + textOffset,
+                oy,
+            )
         }
     }
 

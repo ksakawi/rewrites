@@ -96,3 +96,37 @@ export class Accelerating extends Path {
         return r * Math.sign(a) * Math.sign(x > this.x(t) ? t - x : x + t)
     }
 }
+
+/**
+ * `(t=0, x=base.x(0))` will be shifted to `(t=dt,
+ * x=base.x(0)+dx)`.
+ */
+export class Translate<T extends Path> extends Path {
+    constructor(
+        public base: T,
+        public dx: number,
+        public dt: number,
+    ) {
+        super()
+    }
+
+    x(t: number): number {
+        return this.base.x(t - this.dt) + this.dx
+    }
+
+    v(t: number): number {
+        return this.base.v(t - this.dt)
+    }
+
+    clock(t: number): number {
+        return this.base.clock(t - this.dt) - this.base.clock(-this.dt)
+    }
+
+    fromClock(t: number): number {
+        return this.base.fromClock(t + this.base.clock(-this.dt)) + this.dt
+    }
+
+    whenDidLightDepartTo(t: number, x: number): number {
+        return this.base.whenDidLightDepartTo(t - this.dt, x - this.dx) + this.dt
+    }
+}
