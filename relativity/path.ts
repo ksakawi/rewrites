@@ -40,10 +40,6 @@ export class Inertial extends Path {
         return this.v0
     }
 
-    a(_t: number): number {
-        return 0
-    }
-
     clock(t: number): number {
         return t * Math.sqrt(1 - this.v0 ** 2)
     }
@@ -64,6 +60,24 @@ export class Accelerating extends Path {
         const base = new Accelerating(a)
         const dt = base.tFromV(v0)
         return new Translate(base, -base.x(dt), -dt)
+    }
+
+    static awayAndBack(a: number, timeAway: number) {
+        const switchPoint = timeAway / 4
+        const base = new Accelerating(a)
+        return new Switch(
+            new Switch(
+                new Switch(
+                    new Switch(new Inertial(0), base, 0),
+                    new Translate(new Accelerating(-a), 0, 2 * switchPoint),
+                    switchPoint,
+                ),
+                new Translate(base, 0, 4 * switchPoint),
+                3 * switchPoint,
+            ),
+            new Inertial(0),
+            4 * switchPoint,
+        )
     }
 
     constructor(public a0: number) {
@@ -94,12 +108,7 @@ export class Accelerating extends Path {
         const o = x > this.x(t) ? x - t : x + t
         const v = a * o
 
-        const r =
-            Math.acosh(
-                ((Math.sinh(v / 2) + Math.cosh(v / 2)) * (Math.sinh(v) + 3 * Math.cosh(v) - 2))
-                    / (3 * Math.sinh(v / 2) + Math.cosh(v / 2)),
-            )
-            / (2 * a)
+        const r = Math.acosh(Math.exp(v) + 1 / (4 * Math.exp(v) - 2) - 1 / 2) / (2 * a)
 
         return r * Math.sign(a) * Math.sign(x > this.x(t) ? t - x : x + t)
     }
@@ -109,10 +118,6 @@ export class Accelerating extends Path {
     }
 }
 
-/**
- * `(t=0, x=base.x(0))` will be shifted to `(t=dt,
- * x=base.x(0)+dx)`.
- */
 export class Translate<T extends Path> extends Path {
     constructor(
         public base: T,
