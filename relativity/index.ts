@@ -1,5 +1,6 @@
 import { Grid } from "../cv/2/2d-object/grid"
 import { Canvas2 } from "../cv/2/2d/canvas"
+import { apply2x, apply2y } from "../cv/2/2d/tform"
 import { LinearCone } from "./cone"
 import { drawPath } from "./draw"
 import { Accelerating, Inertial } from "./path"
@@ -16,5 +17,19 @@ cv.adopt(a, (cv, path) => drawPath(cv, path, "blue", "right"))
 cv.adopt(b, (cv, path) => drawPath(cv, path, "green", "left"))
 
 const cone = new LinearCone()
-cone.xFromY = (t) => b.x(t)
+cone.x = 2
+cone.y = 20
 cv.push(cone)
+
+cv.pushFn(({ ctx, tlo }) => {
+    const t = b.whenDidLightDepartTo(cone.y, cone.x)
+    const x = b.x(t)
+
+    const ox = apply2x(tlo, x)
+    const oy = apply2y(tlo, t)
+
+    ctx.strokeStyle = "black"
+    ctx.beginPath()
+    ctx.ellipse(ox, oy, 3, 3, 0, 0, 2 * Math.PI)
+    ctx.stroke()
+})

@@ -6,6 +6,7 @@
     "experimentalTernaries": true,
     "experimentalOperatorPosition": "start",
     "jsdocCapitalizeDescription": false,
+    "jsdocPrintWidth": 60,
     "tabWidth": 4,
     "printWidth": 100,
     "overrides": [

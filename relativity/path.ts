@@ -10,6 +10,21 @@ export abstract class Path {
 
     /** Inverse of `clock`. */
     abstract fromClock(t: number): number
+
+    /**
+     * Plot `(q, this.x(q))` on a graph, then draw a linear
+     * light cone at `(t, x)`. This returns a value of `q`
+     * such that `(q, this.x(q))` intersects the light
+     * cone's boundary.
+     *
+     * More precisely, let `r` be the returned value. Then
+     * either:
+     *
+     * - `r` is `NaN`
+     * - `r <= t` and `this.x(r) == x - (t - r)`
+     * - `r <= t` and `this.x(r) == x + (t - r)`
+     */
+    abstract whenDidLightDepartTo(t: number, x: number): number
 }
 
 export class Inertial extends Path {
@@ -36,6 +51,12 @@ export class Inertial extends Path {
     fromClock(t: number): number {
         return t / Math.sqrt(1 - this.v0 ** 2)
     }
+
+    whenDidLightDepartTo(t: number, x: number): number {
+        const t1 = (x - t) / (this.v0 - 1)
+        const t2 = (x + t) / (this.v0 + 1)
+        return t1 > t ? t2 : t1
+    }
 }
 
 export class Accelerating extends Path {
@@ -57,5 +78,21 @@ export class Accelerating extends Path {
 
     fromClock(t: number): number {
         return Math.asinh(Math.tan(this.a0 * t)) / this.a0
+    }
+
+    whenDidLightDepartTo(t: number, x: number): number {
+        const a = this.a0
+
+        const o = x > this.x(t) ? x - t : x + t
+        const v = a * o
+
+        const r =
+            Math.acosh(
+                ((Math.sinh(v / 2) + Math.cosh(v / 2)) * (Math.sinh(v) + 3 * Math.cosh(v) - 2))
+                    / (3 * Math.sinh(v / 2) + Math.cosh(v / 2)),
+            )
+            / (2 * a)
+
+        return r * Math.sign(a) * Math.sign(x > this.x(t) ? t - x : x + t)
     }
 }
