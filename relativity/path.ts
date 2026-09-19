@@ -60,6 +60,12 @@ export class Inertial extends Path {
 }
 
 export class Accelerating extends Path {
+    static withInitialVelocity(v0: number, a: number) {
+        const base = new Accelerating(a)
+        const dt = base.tFromV(v0)
+        return new Translate(base, -base.x(dt), -dt)
+    }
+
     constructor(public a0: number) {
         super()
     }
@@ -77,6 +83,8 @@ export class Accelerating extends Path {
     }
 
     fromClock(t: number): number {
+        const clockMax = Math.PI / (2 * Math.abs(this.a0))
+        if (t > clockMax || t < -clockMax) return NaN
         return Math.asinh(Math.tan(this.a0 * t)) / this.a0
     }
 
@@ -94,6 +102,10 @@ export class Accelerating extends Path {
             / (2 * a)
 
         return r * Math.sign(a) * Math.sign(x > this.x(t) ? t - x : x + t)
+    }
+
+    tFromV(v: number): number {
+        return Math.atanh(v) / this.a0
     }
 }
 
@@ -128,5 +140,41 @@ export class Translate<T extends Path> extends Path {
 
     whenDidLightDepartTo(t: number, x: number): number {
         return this.base.whenDidLightDepartTo(t - this.dt, x - this.dx) + this.dt
+    }
+}
+
+export class Switch<A extends Path, B extends Path> extends Path {
+    constructor(
+        public a: A,
+        public b: B,
+        public mid: number,
+    ) {
+        super()
+    }
+
+    x(t: number): number {
+        return t > this.mid ? this.b.x(t) - this.b.x(this.mid) + this.a.x(this.mid) : this.a.x(t)
+    }
+
+    v(t: number): number {
+        return t > this.mid ? this.b.v(t) : this.a.v(t)
+    }
+
+    clock(t: number): number {
+        return t > this.mid ?
+                this.b.clock(t) - this.b.clock(this.mid) + this.a.clock(this.mid)
+            :   this.a.clock(t)
+    }
+
+    fromClock(t: number): number {
+        return t > this.a.clock(this.mid) ?
+                this.b.fromClock(t + this.b.clock(this.mid) - this.a.clock(this.mid))
+            :   this.a.fromClock(t)
+    }
+
+    whenDidLightDepartTo(t: number, x: number): number {
+        const at = this.a.whenDidLightDepartTo(t, x)
+        const bt = this.b.whenDidLightDepartTo(t, x + this.b.x(this.mid) - this.a.x(this.mid))
+        return at > this.mid ? bt : at
     }
 }
