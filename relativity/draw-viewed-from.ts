@@ -1,9 +1,9 @@
 import { spacing } from "../cv/2/2d-object/grid"
 import type { Canvas2 } from "../cv/2/2d/canvas"
 import { apply2x, apply2y } from "../cv/2/2d/tform"
-import type { Path } from "./path"
+import { Inertial, type Path } from "./path"
 
-export function drawViewedFrom(cv: Canvas2, base: Path, target: Path, color: string) {
+export function drawEarthViewedFrom(cv: Canvas2, base: Path, color: string) {
     const { ctx, tlo, tol, height } = cv
 
     const trace = new Path2D()
@@ -15,21 +15,20 @@ export function drawViewedFrom(cv: Canvas2, base: Path, target: Path, color: str
 
     let trackedValue: number | undefined
     const [interval] = spacing(-cv.pixelHeight)
-    const digits = Math.max(0, -Math.log10(interval))
-    for (let oy = 0; oy <= height; oy++) {
+    const digits = Math.max(0, -Math.floor(Math.log10(interval)))
+    for (let oy = -height; oy <= height; oy++) {
         const clockBase = apply2y(tol, oy)
         const t = base.fromClock(clockBase)
         const xBase = base.x(t)
 
-        const tSourceLight = target.whenDidLightDepartTo(t, xBase)
-        const timeTaken = base.clock(t) - base.clock(tSourceLight)
-        const v = base.v(t)
+        const tSourceLight = new Inertial(0).whenDidLightDepartTo(t, xBase)
+        const xSeen = -base.x(t) * Math.sqrt(1 - base.v(t) ** 2)
 
-        const oxv = apply2x(tlo, -base.x(t))
-        const oyv = apply2y(tlo, t)
+        const oxv = apply2x(tlo, xSeen)
+        const oyv = apply2y(tlo, clockBase)
         trace.lineTo(oxv, oyv)
 
-        const myTrackedValue = base.clock(t)
+        const myTrackedValue = tSourceLight
         if (trackedValue === undefined) {
             trackedValue = myTrackedValue
             continue
@@ -37,7 +36,7 @@ export function drawViewedFrom(cv: Canvas2, base: Path, target: Path, color: str
         if (Math.floor(myTrackedValue / interval) !== Math.floor(trackedValue / interval)) {
             holes.moveTo(oxv + 3, oyv)
             holes.ellipse(oxv, oyv, 3, 3, 0, 0, 2 * Math.PI)
-            ctx.fillText("" + base.clock(t).toFixed(digits), oxv - 8, oyv)
+            ctx.fillText("" + myTrackedValue.toFixed(digits), oxv - 8, oyv)
         }
         trackedValue = myTrackedValue
     }

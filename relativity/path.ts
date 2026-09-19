@@ -14,7 +14,7 @@ export abstract class Path {
     /**
      * Equivalent to `int_0^t 1/sqrt(1-v(x)^2) dx`. Used for
      * length contraction. In inertial frames, equal to
-     * `fromClock`.
+     * k`fromClock`.
      */
     abstract contr(t: number): number
 
@@ -159,6 +159,10 @@ export class Translate<T extends Path> extends Path {
         return this.base.fromClock(t + this.base.clock(-this.dt)) + this.dt
     }
 
+    contr(t: number): number {
+        return this.base.contr(t - this.dt) - this.base.contr(-this.dt)
+    }
+
     whenDidLightDepartTo(t: number, x: number): number {
         return this.base.whenDidLightDepartTo(t - this.dt, x - this.dx) + this.dt
     }
@@ -191,6 +195,12 @@ export class Switch<A extends Path, B extends Path> extends Path {
         return t > this.a.clock(this.mid) ?
                 this.b.fromClock(t + this.b.clock(this.mid) - this.a.clock(this.mid))
             :   this.a.fromClock(t)
+    }
+
+    contr(t: number): number {
+        return t > this.mid ?
+                this.b.contr(t) - this.b.contr(this.mid) + this.a.contr(this.mid)
+            :   this.a.contr(t)
     }
 
     whenDidLightDepartTo(t: number, x: number): number {
