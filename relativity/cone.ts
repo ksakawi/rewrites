@@ -1,6 +1,7 @@
 import type { Canvas2 } from "../cv/2/2d/canvas"
 import { Object2, type PEvent } from "../cv/2/2d/object"
 import { apply2x, apply2y } from "../cv/2/2d/tform"
+import type { Path } from "./path"
 
 export class LinearCone extends Object2 {
     constructor(
@@ -88,4 +89,22 @@ export class LinearCone extends Object2 {
         this.pointersDown.delete(pointerId)
         cv.popCursor()
     }
+}
+
+export function createDualCone(cv: Canvas2, path: Path, xInertial: number, xNormal: number) {
+    const xmid = (xInertial + xNormal) / 2
+
+    const coneInertial = new LinearCone(-Infinity, xmid, (t) => {
+        coneNormal.y = path.fromClock(t)
+        coneNormal.x = path.x(coneNormal.y) + xNormal
+        return xInertial
+    })
+
+    const coneNormal = new LinearCone(xmid, Infinity, (t) => {
+        coneInertial.y = path.clock(t)
+        return path.x(t) + xNormal
+    })
+
+    cv.push(coneInertial)
+    cv.push(coneNormal)
 }

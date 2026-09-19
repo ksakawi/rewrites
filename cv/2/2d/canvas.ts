@@ -451,12 +451,18 @@ export class Canvas2 {
         return inverse2(this.tuo)
     }
 
-    /** Width of one offset space pixel, measured in local space. */
+    /**
+     * Width of one offset space pixel, measured in local
+     * space.
+     */
     get pixelWidth(): number {
         return this.tol.sx
     }
 
-    /** Height of one offset space pixel, measured in local space. */
+    /**
+     * Height of one offset space pixel, measured in local
+     * space.
+     */
     get pixelHeight(): number {
         return this.tol.sy
     }
