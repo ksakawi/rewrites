@@ -7,6 +7,7 @@ export class LinearCone extends Object2 {
     x = 0
     y = 0
     xFromY: ((y: number) => number) | undefined
+    offsetX = 0
 
     draw({ ctx, tlo, width, height }: Canvas2): void {
         ctx.fillStyle = this.color
@@ -27,7 +28,7 @@ export class LinearCone extends Object2 {
     }
 
     includes({ cv: { tlo }, offset: [mx, my], pointerId, size }: PEvent): boolean {
-        const ox = apply2x(tlo, this.x)
+        const ox = apply2x(tlo, this.x + this.offsetX)
         const oy = apply2y(tlo, this.y)
         return Math.hypot(mx - ox, my - oy) < 12 * size
     }

@@ -5,11 +5,18 @@ export abstract class Path {
     /** Equivalent to `d/dt x(t)`. */
     abstract v(t: number): number
 
-    /** Equivalent to `int_0^t (sqrt(1-v(x)^2) dx)`. */
+    /** Equivalent to `int_0^t sqrt(1-v(x)^2) dx`. */
     abstract clock(t: number): number
 
     /** Inverse of `clock`. */
     abstract fromClock(t: number): number
+
+    /**
+     * Equivalent to `int_0^t 1/sqrt(1-v(x)^2) dx`. Used for
+     * length contraction. In inertial frames, equal to
+     * `fromClock`.
+     */
+    abstract contr(t: number): number
 
     /**
      * Plot `(q, this.x(q))` on a graph, then draw a linear
@@ -45,6 +52,10 @@ export class Inertial extends Path {
     }
 
     fromClock(t: number): number {
+        return t / Math.sqrt(1 - this.v0 ** 2)
+    }
+
+    contr(t: number): number {
         return t / Math.sqrt(1 - this.v0 ** 2)
     }
 
@@ -100,6 +111,11 @@ export class Accelerating extends Path {
         const clockMax = Math.PI / (2 * Math.abs(this.a0))
         if (t > clockMax || t < -clockMax) return NaN
         return Math.asinh(Math.tan(this.a0 * t)) / this.a0
+    }
+
+    contr(t: number): number {
+        const a = this.a0
+        return (Math.tanh(a * t) * Math.cosh(a * t) ** 2) / a
     }
 
     whenDidLightDepartTo(t: number, x: number): number {

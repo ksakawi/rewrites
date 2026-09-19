@@ -1,8 +1,9 @@
+import { spacing } from "../cv/2/2d-object/grid"
 import type { Canvas2 } from "../cv/2/2d/canvas"
 import { apply2x, apply2y } from "../cv/2/2d/tform"
 import type { Path } from "./path"
 
-export function drawPath(cv: Canvas2, path: Path, color: string, textAlign: "left" | "right") {
+export function drawNormal(cv: Canvas2, path: Path, color: string, textAlign: "left" | "right") {
     const textOffset = textAlign === "left" ? 8 : -8
 
     const trace = new Path2D()
@@ -14,17 +15,26 @@ export function drawPath(cv: Canvas2, path: Path, color: string, textAlign: "lef
     cv.ctx.textBaseline = "middle"
     cv.ctx.font = "16px Symbola"
 
+    let lastClock = Infinity
+    const [space] = spacing(-cv.pixelHeight)
+    const digits = Math.max(0, -Math.floor(Math.log10(space)))
     for (let oy = 0; oy <= cv.height; oy++) {
         const t = apply2y(cv.tol, oy)
         const x = path.x(t)
         const ox = apply2x(cv.tlo, x)
         trace.lineTo(ox, oy)
 
-        if (oy % 20 === 0) {
+        const myClock = path.clock(t)
+        if (Math.floor(lastClock / space) !== Math.floor(myClock / space)) {
             holes.moveTo(ox + 3, oy)
             holes.ellipse(ox, oy, 3, 3, 0, 0, 2 * Math.PI)
-            cv.ctx.fillText("" + path.clock(t).toFixed(2), ox + textOffset, oy)
+            cv.ctx.fillText(
+                "" + (Math.round(myClock / space) * space).toFixed(digits),
+                ox + textOffset,
+                oy,
+            )
         }
+        lastClock = myClock
     }
 
     cv.ctx.stroke(trace)
