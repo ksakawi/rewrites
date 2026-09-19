@@ -126,8 +126,8 @@ export class Canvas2 {
         this.push(new FromFn(draw))
     }
 
-    adopt<T>(value: T, draw: (value: T, cv: Canvas2) => void) {
-        this.push(new FromFn((cv) => draw(value, cv)))
+    adopt<T>(value: T, draw: (cv: Canvas2, value: T) => void) {
+        this.push(new FromFn((cv) => draw(cv, value)))
     }
 
     #target(
