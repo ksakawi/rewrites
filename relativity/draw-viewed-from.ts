@@ -31,10 +31,9 @@ export function drawAsSeenFrom(
         const tSourceLight = target.whenDidLightDepartTo(t, xBase)
         const xTarget = target.x(tSourceLight)
 
-        const xSeen = (xTarget - xBase) * Math.sqrt(1 - base.v(t) ** 2)
-
-        const oxv = apply2x(tlo, xSeen)
-        const oyv = tilt ? oy + xSeen * -tlo.sy : oy
+        const dif = (xTarget - xBase) * Math.sqrt(1 - 0.5)
+        const oxv = apply2x(tlo, dif)
+        const oyv = tilt ? oy + dif * tlo.sy : oy
         trace.lineTo(oxv, oyv)
 
         const myTrackedValue = target.clock(tSourceLight)

@@ -24,7 +24,6 @@ cv1.handleEvent = cv2.handleEvent = (ev) => {
 }
 
 const stationary = new Inertial(0)
-
 const inertial = new Inertial(0.5)
 const spaceship = Accelerating.awayAndBack(0.3, 12)
 
