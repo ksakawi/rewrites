@@ -3,10 +3,22 @@ import { Object2, type PEvent } from "../cv/2/2d/object"
 import { apply2x, apply2y } from "../cv/2/2d/tform"
 
 export class LinearCone extends Object2 {
+    constructor(
+        readonly xmin: number,
+        readonly xmax: number,
+        public xFromY: ((y: number) => number) | null,
+    ) {
+        super()
+        queueMicrotask(() => {
+            if (this.xFromY) {
+                this.x = this.xFromY(this.y)
+            }
+        })
+    }
+
     color = "orange"
     x = 0
     y = 0
-    xFromY: ((y: number) => number) | undefined
     offsetX = 0
 
     draw({ ctx, tlo, width, height }: Canvas2): void {
@@ -15,19 +27,22 @@ export class LinearCone extends Object2 {
         const ox = apply2x(tlo, this.x)
         const oy = apply2y(tlo, this.y)
 
+        const lhs = Math.max(0, apply2x(tlo, this.xmin))
+        const rhs = Math.min(width, apply2x(tlo, this.xmax))
+
         ctx.beginPath()
         ctx.moveTo(ox, oy)
-        ctx.lineTo(width, oy + (width - ox))
-        ctx.lineTo(width, height)
-        ctx.lineTo(0, height)
-        ctx.lineTo(0, oy + ox)
+        ctx.lineTo(rhs, oy + (rhs - ox))
+        ctx.lineTo(rhs, height)
+        ctx.lineTo(lhs, height)
+        ctx.lineTo(lhs, oy + (ox - lhs))
         ctx.closePath()
         ctx.globalAlpha = this.pointersIn.size ? 0.5 : 0.3
         ctx.fill()
         ctx.globalAlpha = 1
     }
 
-    includes({ cv: { tlo }, offset: [mx, my], pointerId, size }: PEvent): boolean {
+    includes({ cv: { tlo }, offset: [mx, my], size }: PEvent): boolean {
         const ox = apply2x(tlo, this.x + this.offsetX)
         const oy = apply2y(tlo, this.y)
         return Math.hypot(mx - ox, my - oy) < 12 * size
@@ -61,6 +76,12 @@ export class LinearCone extends Object2 {
         if (!this.pointersDown.has(pointerId)) return
         this.y = apply2y(tol, oy)
         this.x = this.xFromY ? this.xFromY(this.y) : apply2x(tol, ox)
+        if (this.x < this.xmin) {
+            this.x = this.xmin
+        }
+        if (this.x > this.xmax) {
+            this.x = this.xmax
+        }
     }
 
     onPointerCancel({ cv, pointerId }: PEvent): void {

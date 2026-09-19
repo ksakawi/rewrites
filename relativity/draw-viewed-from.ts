@@ -4,7 +4,13 @@ import { apply2x, apply2y } from "../cv/2/2d/tform"
 import type { Config } from "./config"
 import { type Path } from "./path"
 
-export function drawAsSeenFrom(cv: Canvas2, base: Path, target: Path, config: Config) {
+export function drawAsSeenFrom(
+    cv: Canvas2,
+    base: Path,
+    target: Path,
+    tilt: boolean,
+    config: Config,
+) {
     const { ctx, tlo, tol, height } = cv
 
     const trace = new Path2D()
@@ -28,7 +34,7 @@ export function drawAsSeenFrom(cv: Canvas2, base: Path, target: Path, config: Co
         const xSeen = (xTarget - xBase) * Math.sqrt(1 - base.v(t) ** 2)
 
         const oxv = apply2x(tlo, xSeen)
-        const oyv = oy
+        const oyv = tilt ? oy + xSeen * -tlo.sy : oy
         trace.lineTo(oxv, oyv)
 
         const myTrackedValue = target.clock(tSourceLight)
