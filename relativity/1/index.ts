@@ -1,5 +1,5 @@
-import { Grid } from "../cv/2/2d-object/grid"
-import { Canvas2 } from "../cv/2/2d/canvas"
+import { Grid } from "../../cv/2/2d-object/grid"
+import { Canvas2 } from "../../cv/2/2d/canvas"
 import { createDualCone } from "./cone"
 import { Config } from "./config"
 import { drawNormal } from "./draw-normal"
@@ -25,7 +25,7 @@ cv1.handleEvent = cv2.handleEvent = (ev) => {
 
 const stationary = new Inertial(0)
 const inertial = new Inertial(0.5)
-const spaceship = Accelerating.awayAndBack(0.3, 12)
+const spaceship = Accelerating.awayAndBack(0.5, 12)
 
 const blue = new Config("blue", "right")
 const green = new Config("green", "left")
@@ -47,6 +47,5 @@ cv2.adopt(stationary, (cv, path) => drawNormal(cv, path, blue))
 cv2.adopt(spaceship, (cv, path) => drawNormal(cv, path, red))
 cv2.pushFn((cv) => cv.ctx.translate(-5 * cv.tlo.sx, 0))
 cv2.pushFn((cv) => cv.ctx.translate(-5 * cv.tlo.sx, 0))
-cv2.pushFn((cv) => drawNormal(cv, stationary, red))
 cv2.pushFn((cv) => drawAsSeenFrom(cv, spaceship, stationary, true, blue))
 cv2.pushFn((cv) => cv.ctx.translate(5 * cv.tlo.sx, 0))

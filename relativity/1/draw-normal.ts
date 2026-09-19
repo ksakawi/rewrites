@@ -1,6 +1,6 @@
-import { spacing } from "../cv/2/2d-object/grid"
-import type { Canvas2 } from "../cv/2/2d/canvas"
-import { apply2x, apply2y } from "../cv/2/2d/tform"
+import { spacing } from "../../cv/2/2d-object/grid"
+import type { Canvas2 } from "../../cv/2/2d/canvas"
+import { apply2x, apply2y } from "../../cv/2/2d/tform"
 import type { Config } from "./config"
 import type { Path } from "./path"
 

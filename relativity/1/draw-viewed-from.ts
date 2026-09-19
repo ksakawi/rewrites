@@ -1,6 +1,6 @@
-import { spacing } from "../cv/2/2d-object/grid"
-import type { Canvas2 } from "../cv/2/2d/canvas"
-import { apply2x, apply2y } from "../cv/2/2d/tform"
+import { spacing } from "../../cv/2/2d-object/grid"
+import type { Canvas2 } from "../../cv/2/2d/canvas"
+import { apply2x, apply2y } from "../../cv/2/2d/tform"
 import type { Config } from "./config"
 import { type Path } from "./path"
 
@@ -31,7 +31,8 @@ export function drawAsSeenFrom(
         const tSourceLight = target.whenDidLightDepartTo(t, xBase)
         const xTarget = target.x(tSourceLight)
 
-        const dif = (xTarget - xBase) * Math.sqrt(1 - 0.5)
+        const v = base.v(t)
+        const dif = (xTarget - xBase) * -((v - 1) / Math.sqrt(1 - v ** 2))
         const oxv = apply2x(tlo, dif)
         const oyv = tilt ? oy + dif * tlo.sy : oy
         trace.lineTo(oxv, oyv)

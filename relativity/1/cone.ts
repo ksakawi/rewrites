@@ -1,6 +1,6 @@
-import type { Canvas2 } from "../cv/2/2d/canvas"
-import { Object2, type PEvent } from "../cv/2/2d/object"
-import { apply2x, apply2y } from "../cv/2/2d/tform"
+import type { Canvas2 } from "../../cv/2/2d/canvas"
+import { Object2, type PEvent } from "../../cv/2/2d/object"
+import { apply2x, apply2y } from "../../cv/2/2d/tform"
 import type { Path } from "./path"
 
 export class LinearCone extends Object2 {
