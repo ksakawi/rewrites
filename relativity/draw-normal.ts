@@ -1,17 +1,16 @@
 import { spacing } from "../cv/2/2d-object/grid"
 import type { Canvas2 } from "../cv/2/2d/canvas"
 import { apply2x, apply2y } from "../cv/2/2d/tform"
+import type { Config } from "./config"
 import type { Path } from "./path"
 
-export function drawNormal(cv: Canvas2, path: Path, color: string, textAlign: "left" | "right") {
-    const textOffset = textAlign === "left" ? 8 : -8
-
+export function drawNormal(cv: Canvas2, path: Path, config: Config) {
     const trace = new Path2D()
     const holes = new Path2D()
 
     cv.ctx.lineWidth = 1.5
-    cv.ctx.strokeStyle = cv.ctx.fillStyle = color
-    cv.ctx.textAlign = textAlign
+    cv.ctx.strokeStyle = cv.ctx.fillStyle = config.color
+    cv.ctx.textAlign = config.textAlign
     cv.ctx.textBaseline = "middle"
     cv.ctx.font = "16px Symbola"
 
@@ -30,7 +29,7 @@ export function drawNormal(cv: Canvas2, path: Path, color: string, textAlign: "l
             holes.ellipse(ox, oy, 3, 3, 0, 0, 2 * Math.PI)
             cv.ctx.fillText(
                 "" + (Math.round(myClock / space) * space).toFixed(digits),
-                ox + textOffset,
+                ox + config.textOffset,
                 oy,
             )
         }

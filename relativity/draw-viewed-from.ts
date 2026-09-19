@@ -1,16 +1,17 @@
 import { spacing } from "../cv/2/2d-object/grid"
 import type { Canvas2 } from "../cv/2/2d/canvas"
 import { apply2x, apply2y } from "../cv/2/2d/tform"
-import { Inertial, type Path } from "./path"
+import type { Config } from "./config"
+import { type Path } from "./path"
 
-export function drawEarthViewedFrom(cv: Canvas2, base: Path, color: string) {
+export function drawAsSeenFrom(cv: Canvas2, base: Path, target: Path, config: Config) {
     const { ctx, tlo, tol, height } = cv
 
     const trace = new Path2D()
     const holes = new Path2D()
 
-    ctx.fillStyle = color
-    ctx.textAlign = "right"
+    ctx.fillStyle = config.color
+    ctx.textAlign = config.textAlign
     ctx.font = "16px Symbola"
 
     let trackedValue: number | undefined
@@ -21,14 +22,16 @@ export function drawEarthViewedFrom(cv: Canvas2, base: Path, color: string) {
         const t = base.fromClock(clockBase)
         const xBase = base.x(t)
 
-        const tSourceLight = new Inertial(0).whenDidLightDepartTo(t, xBase)
-        const xSeen = -base.x(t) * Math.sqrt(1 - base.v(t) ** 2)
+        const tSourceLight = target.whenDidLightDepartTo(t, xBase)
+        const xTarget = target.x(tSourceLight)
+
+        const xSeen = (xTarget - xBase) * Math.sqrt(1 - base.v(t) ** 2)
 
         const oxv = apply2x(tlo, xSeen)
-        const oyv = apply2y(tlo, clockBase)
+        const oyv = oy
         trace.lineTo(oxv, oyv)
 
-        const myTrackedValue = tSourceLight
+        const myTrackedValue = target.clock(tSourceLight)
         if (trackedValue === undefined) {
             trackedValue = myTrackedValue
             continue
@@ -36,12 +39,12 @@ export function drawEarthViewedFrom(cv: Canvas2, base: Path, color: string) {
         if (Math.floor(myTrackedValue / interval) !== Math.floor(trackedValue / interval)) {
             holes.moveTo(oxv + 3, oyv)
             holes.ellipse(oxv, oyv, 3, 3, 0, 0, 2 * Math.PI)
-            ctx.fillText("" + myTrackedValue.toFixed(digits), oxv - 8, oyv)
+            ctx.fillText("" + myTrackedValue.toFixed(digits), oxv + config.textOffset, oyv)
         }
         trackedValue = myTrackedValue
     }
 
-    ctx.strokeStyle = color
+    ctx.strokeStyle = config.color
     ctx.lineWidth = 1.5
     ctx.stroke(trace)
     ctx.fillStyle = "white"
