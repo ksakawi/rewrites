@@ -2,18 +2,26 @@ import { solve } from "../../math/solve"
 
 export abstract class Path {
     abstract x(t: number): number
+
+    /** d/dt x(t). */
     abstract v(t: number): number
+
+    /** int_0^t sqrt(1 - v(t)**2) dt. */
     abstract clock(t: number): number
+
+    /** Inverse of `fromClock`. */
     abstract fromClock(t: number): number
 
     /**
      * Returns a time `t` such that `t=m*x(t)+b`, or `NaN` if no such value
      * exists.
      *
-     * `-1 <= m <= 1`.
+     * Assumes `-1 <= m <= 1`.
+     *
+     * `tIntersectingWith(0, b) == t`.
      */
     tIntersectingWith(m: number, b: number): number {
-        return solve(0.0001, (t) => t - m * this.x(t) + b)
+        return solve(0.0001, (t) => t - m * this.x(t) - b)
     }
 
     translate(dx: number, dt: number) {
@@ -112,6 +120,13 @@ export class Translate<T extends Path> extends Path {
     fromClock(t: number): number {
         return this.base.fromClock(t + this.base.clock(-this.dt)) + this.dt
     }
+
+    tIntersectingWith(m: number, b: number): number {
+        // t=m*x(t)+b
+        // t-dt=m*(x(t-dt))+b+m*dx
+
+        return this.base.tIntersectingWith(m, b - this.dt + m * this.dx) + this.dt
+    }
 }
 
 /**
@@ -145,5 +160,37 @@ export class Switch<A extends Path, B extends Path> extends Path {
         return t > this.a.clock(this.mid) ?
                 this.b.fromClock(t + this.b.clock(this.mid) - this.a.clock(this.mid))
             :   this.a.fromClock(t)
+    }
+}
+
+export class Shift<T extends Path> extends Path {
+    constructor(
+        public base: T,
+        public dv: number,
+    ) {
+        super()
+    }
+
+    x(t: number): number {
+        const tBase = this.base.tIntersectingWith(this.dv, t * Math.sqrt(1 - this.dv ** 2))
+        const xBase = this.base.x(tBase)
+        return (xBase - this.dv * tBase) / Math.sqrt(1 - this.dv ** 2)
+    }
+
+    v(t: number): number {
+        const tBase = this.base.tIntersectingWith(this.dv, t * Math.sqrt(1 - this.dv ** 2))
+        const vBase = this.base.v(tBase)
+        return (vBase - this.dv) / (1 - vBase * this.dv)
+    }
+
+    clock(t: number): number {
+        const tBase = this.base.tIntersectingWith(this.dv, t * Math.sqrt(1 - this.dv ** 2))
+        return this.base.clock(tBase)
+    }
+
+    fromClock(t: number): number {
+        const tBase = this.base.fromClock(t)
+        const xBase = this.base.x(tBase)
+        return (tBase - this.dv * xBase) / Math.sqrt(1 - this.dv ** 2)
     }
 }

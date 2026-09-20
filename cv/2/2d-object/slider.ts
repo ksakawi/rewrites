@@ -4,7 +4,7 @@ import { Object2, type PEvent } from "../2d/object"
 export class Slider extends Object2 {
     public v = 1
 
-    constructor() {
+    constructor(public onChange?: (x: Slider) => void) {
         super()
     }
 
@@ -77,7 +77,7 @@ export class Slider extends Object2 {
     }
 
     includes(ev: PEvent): boolean {
-        const { width, height, insetX, insetY, track, dotRadius } = this
+        const { height, insetY, dotRadius } = this
 
         const ox = this.oxFromV(ev.cv.width, this.v)
         const oy = insetY + height / 2
@@ -117,5 +117,6 @@ export class Slider extends Object2 {
     onPointerMove(ev: PEvent): void {
         if (!this.pointersDown.has(ev.pointerId)) return
         this.v = this.vFromOx(ev.cv.width, ev.offset[0])
+        this.onChange?.(this)
     }
 }
