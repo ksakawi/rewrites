@@ -1,10 +1,26 @@
 import { spacing, toFixed } from "../../cv/2/2d-object/grid"
 import type { Canvas2 } from "../../cv/2/2d/canvas"
+import { Object2 } from "../../cv/2/2d/object"
 import { apply2x, apply2y } from "../../cv/2/2d/tform"
 import type { Style } from "./config"
 import type { Path } from "./path"
 
-export function drawPath(cv: Canvas2, path: Path, style: Style) {
+export class DrawnPath extends Object2 {
+    constructor(
+        readonly path: Path,
+        readonly style: Style,
+    ) {
+        super()
+    }
+
+    draw(cv: Canvas2): void {
+        drawPathTrace(cv, this.path, this.style)
+        drawPathTicks(cv, this.path, this.style)
+        drawPathTickLabels(cv, this.path, this.style)
+    }
+}
+
+export function drawPathTrace(cv: Canvas2, path: Path, style: Style) {
     const { ctx, tlo, tol, height } = cv
     const trace = new Path2D()
 
