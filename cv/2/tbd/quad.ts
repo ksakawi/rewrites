@@ -62,21 +62,13 @@ function Da(e: number, t: number) {
     return a >= e && t >= a ? a : Jl(e, t)
 }
 
-function tP(
-    e: number,
-    t: number,
-    n: number,
-    r: number,
-    o: (x: number) => number,
-) {
+function tP(e: number, t: number, n: number, r: number, o: (x: number) => number) {
     if (isFinite(t) !== isFinite(r))
         for (;;) {
             let i = Da(e, n),
                 s = o(i)
             if (i === e || i === n) return isFinite(t) ? e : n
-            isFinite(s) !== isFinite(t) ?
-                ((n = i), (r = s))
-            :   ((e = i), (t = s))
+            isFinite(s) !== isFinite(t) ? ((n = i), (r = s)) : ((e = i), (t = s))
         }
 }
 
@@ -276,12 +268,7 @@ export function quadDcg(
     if (min === -1 / 0)
         return (
             signFlip
-            * quadDcg(
-                (a: number) => -f(max - a / (1 - a)) / ((1 - a) * (1 - a)),
-                1,
-                0,
-                precision,
-            )
+            * quadDcg((a: number) => -f(max - a / (1 - a)) / ((1 - a) * (1 - a)), 1, 0, precision)
         )
 
     // f(x) dx
@@ -289,12 +276,7 @@ export function quadDcg(
     if (max === 1 / 0)
         return (
             signFlip
-            * quadDcg(
-                (a: number) => f(min + a / (1 - a)) / ((1 - a) * (1 - a)),
-                0,
-                1,
-                precision,
-            )
+            * quadDcg((a: number) => f(min + a / (1 - a)) / ((1 - a) * (1 - a)), 0, 1, precision)
         )
 
     let i = [KD(f, min, max)],
@@ -318,25 +300,9 @@ export function quadDcg(
             l = HX(f, Fs(c.x2, c.x1, 0.125), Fs(c.x1, c.x2, 0.125))
         ;(i.push(KD(f, c.x1, l)), i.push(KD(f, l, c.x2)), (s = nV(i)))
     }
-    meow = i
     return (
         !isFinite(s.maxerror) || !isFinite(s.maxminerror) ? NaN
         : Math.abs(s.totalvalue) <= 10 * s.maxminerror ? 0
         : signFlip * s.totalvalue
     )
 }
-
-let meow
-let w = 0
-
-console.log(
-    quadDcg(
-        (x) => {
-            w++
-            return Math.sin(x * x * x)
-        },
-        -13,
-        27,
-    ),
-)
-console.log(w, meow)

@@ -7,8 +7,11 @@ const FONT_SIZE = 16
 interface GridOptions {
     /** @default true */ x?: boolean
     /** @default true */ xText?: boolean
+    /** @default true */ xAxis?: boolean
+
     /** @default true */ y?: boolean
     /** @default true */ yText?: boolean
+    /** @default true */ yAxis?: boolean
 }
 
 export class Grid extends Object2 {
@@ -22,14 +25,14 @@ export class Grid extends Object2 {
         cv.ctx.lineWidth = 4
         cv.ctx.font = `${FONT_SIZE}px Symbola`
 
-        if (this.opts.x !== false) drawXLines(cv, this.opts.xText ?? true)
-        if (this.opts.y !== false) drawYLines(cv, this.opts.yText ?? true)
+        if (this.opts.x !== false) drawXLines(cv, this.opts.xText ?? true, this.opts.yAxis ?? true)
+        if (this.opts.y !== false) drawYLines(cv, this.opts.yText ?? true, this.opts.xAxis ?? true)
 
         cv.ctx.globalAlpha = 1
     }
 }
 
-function toFixed(n: number, digits: number): string {
+export function toFixed(n: number, digits: number): string {
     const sign = n < 0 ? "−" : ""
     n = Math.abs(n)
 
@@ -52,12 +55,14 @@ function toFixed(n: number, digits: number): string {
         (+str.slice(0, expIndex)).toFixed(Math.max(0, Math.floor(Math.log10(n)) - digits))
         + "ᴇ"
         + str.slice(expIndex + 2)
-        //+ "×10"
-        //+ str.slice(expIndex + 2).replace(/\d/g, (x) => "⁰¹²³⁴⁵⁶⁷⁸⁹"[+x]!)
     )
 }
 
-function drawXLines({ height, pixelWidth, ctx, width, tol, tlo }: Canvas2, text: boolean) {
+function drawXLines(
+    { height, pixelWidth, ctx, width, tol, tlo }: Canvas2,
+    text: boolean,
+    xAxis: boolean,
+) {
     const [dx, tx, tr, mx] = spacing(pixelWidth)
     const xmin = Math.floor(apply2x(tol, 0) / dx)
     const xmax = Math.ceil(apply2x(tol, width) / dx)
@@ -67,7 +72,7 @@ function drawXLines({ height, pixelWidth, ctx, width, tol, tlo }: Canvas2, text:
 
         for (const [multiplier, alpha] of mx) {
             if (x % multiplier == 0) {
-                ctx.globalAlpha = x == 0 ? 1 : alpha
+                ctx.globalAlpha = x == 0 && xAxis ? 1 : alpha
                 ctx.fillRect(ox - 0.5, 0, 1, Math.ceil(height))
                 break
             }
@@ -104,7 +109,11 @@ function drawXLines({ height, pixelWidth, ctx, width, tol, tlo }: Canvas2, text:
     }
 }
 
-function drawYLines({ height, pixelHeight, ctx, width, tol, tlo }: Canvas2, text: boolean) {
+function drawYLines(
+    { height, pixelHeight, ctx, width, tol, tlo }: Canvas2,
+    text: boolean,
+    yAxis: boolean,
+) {
     const [dy, ty, tr, my] = spacing(-pixelHeight)
     const ymin = Math.floor(apply2y(tol, height) / dy)
     const ymax = Math.ceil(apply2y(tol, 0) / dy)
@@ -114,7 +123,7 @@ function drawYLines({ height, pixelHeight, ctx, width, tol, tlo }: Canvas2, text
 
         for (const [multiplier, alpha] of my) {
             if (y % multiplier == 0) {
-                ctx.globalAlpha = y == 0 ? 1 : alpha
+                ctx.globalAlpha = y == 0 && yAxis ? 1 : alpha
                 ctx.fillRect(0, oy - 0.5, Math.ceil(width), 1)
                 break
             }

@@ -1,5 +1,5 @@
 import { FromFn } from "../2d-object/from-fn"
-import type { Object2, PEvent } from "./object"
+import { Object2, type PEvent } from "./object"
 import { apply2, inverse2, type Tform2 } from "./tform"
 import type { Vec2 } from "./vec"
 
@@ -26,21 +26,25 @@ export type Cursor =
     | "auto"
     | "default"
     | "none"
+    //
     | "context-menu"
     | "help"
     | "pointer"
     | "progress"
     | "wait"
+    //
     | "cell"
     | "crosshair"
     | "text"
     | "vertical-text"
+    //
     | "alias"
     | "copy"
     | "move"
     | "not-allowed"
     | "grab"
     | "grabbing"
+    //
     | "col-resize"
     | "row-resize"
     | "n-resize"
@@ -55,6 +59,7 @@ export type Cursor =
     | "ns-resize"
     | "nesw-resize"
     | "nwse-resize"
+    //
     | "zoom-in"
     | "zoom-out"
 
@@ -451,18 +456,12 @@ export class Canvas2 {
         return inverse2(this.tuo)
     }
 
-    /**
-     * Width of one offset space pixel, measured in local
-     * space.
-     */
+    /** Width of one offset space pixel, measured in local space. */
     get pixelWidth(): number {
         return this.tol.sx
     }
 
-    /**
-     * Height of one offset space pixel, measured in local
-     * space.
-     */
+    /** Height of one offset space pixel, measured in local space. */
     get pixelHeight(): number {
         return this.tol.sy
     }
@@ -517,6 +516,7 @@ export class Canvas2 {
 
     #redraw() {
         this.reset()
+        this.lastDebugY = 8
 
         const scene = this.#scene
         for (let i = 0; i < scene.length; i++) {
@@ -527,5 +527,62 @@ export class Canvas2 {
                 scene[i]!.draw(this)
             }
         }
+    }
+
+    private lastDebugY = 8
+    debug(value: unknown) {
+        this.ctx.save()
+
+        this.ctx.font = "16px Arial"
+        this.ctx.textAlign = "left"
+        this.ctx.textBaseline = "top"
+        this.ctx.strokeStyle = "white"
+        this.ctx.lineWidth = 1
+        this.ctx.fillStyle = "black"
+
+        const text = debug(value)
+        for (const line of text.split("\n")) {
+            const x = 8 + (line.length - line.trimStart().length) * 6
+            this.ctx.strokeText(line.trim(), x, this.lastDebugY)
+            this.ctx.fillText(line.trim(), x, this.lastDebugY)
+            this.lastDebugY += 18
+        }
+
+        this.ctx.restore()
+    }
+}
+
+function debug(x: unknown): string {
+    switch (typeof x) {
+        case "string":
+            return x
+
+        case "number":
+            return x.toPrecision(10)
+
+        case "bigint":
+            return x + "n"
+
+        case "boolean":
+            return "" + x
+
+        case "symbol":
+            return String(x)
+
+        case "undefined":
+            return "undefined"
+
+        case "object":
+            if (x === null) return "null"
+            return (
+                `.{`
+                + Object.entries(x)
+                    .map(([k, v]) => `\n    .${k} = ${debug(v).replaceAll("\n", "\n    ")},`)
+                    .join("")
+                + "\n}"
+            )
+
+        case "function":
+            return "[function]"
     }
 }

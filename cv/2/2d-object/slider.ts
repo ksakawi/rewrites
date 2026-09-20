@@ -10,20 +10,37 @@ export class Slider extends Object2 {
 
     public width = 196
     public height = 32
-    public insetX = 40
+    public insetX = 4
     public insetY = 4
     public track = 6
     public dotRadius = 12
 
+    public strokeWidth = 1
+    public colorBorder = "#e0e0e0"
+    public colorBg = "white" // "#020617"
+    public colorTrack = "#e5e5e5" // "#1e293b"
+    public colorSlider = "#3b82f6"
+
     draw({ ctx, width: cvWidth }: Canvas2): void {
         const { width, height, insetX, insetY, track, dotRadius } = this
 
-        ctx.fillStyle = "#020617"
+        ctx.fillStyle = this.colorBorder
         ctx.beginPath()
         ctx.roundRect(cvWidth - width - insetX, insetY, width, height, height / 2)
         ctx.fill()
 
-        ctx.fillStyle = "#1E293B"
+        ctx.fillStyle = this.colorBg
+        ctx.beginPath()
+        ctx.roundRect(
+            cvWidth - width - insetX + this.strokeWidth,
+            insetY + this.strokeWidth,
+            width - this.strokeWidth * 2,
+            height - this.strokeWidth * 2,
+            height / 2,
+        )
+        ctx.fill()
+
+        ctx.fillStyle = this.colorTrack
         ctx.beginPath()
         ctx.roundRect(
             cvWidth - width - insetX + (height - track) / 2,
@@ -37,14 +54,12 @@ export class Slider extends Object2 {
         const x = this.oxFromV(cvWidth, this.v)
         const y = insetY + height / 2
 
-        ctx.fillStyle = "#3B82F6"
+        ctx.fillStyle = this.colorSlider
         ctx.globalAlpha = this.pointersEntered.size ? 1 : 0.3
         ctx.beginPath()
         ctx.ellipse(x, y, dotRadius, dotRadius, 0, 0, 2 * Math.PI)
         ctx.fill()
         ctx.globalAlpha = 1
-
-        ctx.fillStyle = "#3B82F6"
         ctx.beginPath()
         ctx.ellipse(x, y, track / 2, track / 2, 0, 0, 2 * Math.PI)
         ctx.fill()
@@ -74,24 +89,29 @@ export class Slider extends Object2 {
 
     onPointerEnter(ev: PEvent): void {
         this.pointersEntered.add(ev.pointerId)
+        ev.cv.pushCursor("grab")
     }
 
     onPointerLeave(ev: PEvent): void {
         this.pointersEntered.delete(ev.pointerId)
+        ev.cv.popCursor()
     }
 
     private pointersDown = new Set<number>()
 
     onPointerDown(ev: PEvent): void {
         this.pointersDown.add(ev.pointerId)
+        ev.cv.pushCursor("grabbing")
     }
 
     onPointerUp(ev: PEvent): void {
         this.pointersDown.delete(ev.pointerId)
+        ev.cv.popCursor()
     }
 
     onPointerCancel(ev: PEvent): void {
         this.pointersDown.delete(ev.pointerId)
+        ev.cv.popCursor()
     }
 
     onPointerMove(ev: PEvent): void {
