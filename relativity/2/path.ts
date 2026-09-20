@@ -172,25 +172,25 @@ export class Shift<T extends Path> extends Path {
     }
 
     x(t: number): number {
-        const tBase = this.base.tIntersectingWith(this.dv, t * Math.sqrt(1 - this.dv ** 2))
+        const tBase = this.base.tIntersectingWith(-this.dv, t * Math.sqrt(1 - this.dv ** 2))
         const xBase = this.base.x(tBase)
-        return (xBase - this.dv * tBase) / Math.sqrt(1 - this.dv ** 2)
+        return (xBase + this.dv * tBase) / Math.sqrt(1 - this.dv ** 2)
     }
 
     v(t: number): number {
-        const tBase = this.base.tIntersectingWith(this.dv, t * Math.sqrt(1 - this.dv ** 2))
+        const tBase = this.base.tIntersectingWith(-this.dv, t * Math.sqrt(1 - this.dv ** 2))
         const vBase = this.base.v(tBase)
-        return (vBase - this.dv) / (1 - vBase * this.dv)
+        return (vBase + this.dv) / (1 + vBase * this.dv)
     }
 
     clock(t: number): number {
-        const tBase = this.base.tIntersectingWith(this.dv, t * Math.sqrt(1 - this.dv ** 2))
+        const tBase = this.base.tIntersectingWith(-this.dv, t * Math.sqrt(1 - this.dv ** 2))
         return this.base.clock(tBase)
     }
 
     fromClock(t: number): number {
         const tBase = this.base.fromClock(t)
         const xBase = this.base.x(tBase)
-        return (tBase - this.dv * xBase) / Math.sqrt(1 - this.dv ** 2)
+        return (tBase + this.dv * xBase) / Math.sqrt(1 - this.dv ** 2)
     }
 }
