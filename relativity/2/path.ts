@@ -21,7 +21,7 @@ export abstract class Path {
      * `tIntersectingWith(0, b) == t`.
      */
     tIntersectingWith(m: number, b: number): number {
-        return solve(0.0001, (t) => t - m * this.x(t) - b)
+        return solve(1e-10, (t) => t - m * this.x(t) - b)
     }
 
     translate(dx: number, dt: number) {

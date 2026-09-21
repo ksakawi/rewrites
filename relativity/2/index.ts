@@ -11,13 +11,11 @@ cv.push(new Grid())
 cv.el.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh"
 document.body.appendChild(cv.el)
 
+const pInertial = new Shift(new Inertial(0), 0)
 const pAwayAndBack = new Shift(Accelerating.awayAndBack(0.9, 12), 0)
-const pInertial = new Shift(new Inertial(0), -0.3)
-const pInertial2 = new Inertial(-0.3)
 
 cv.push(new DrawnPath(pInertial, new Style("blue", "left")))
 cv.push(new DrawnPath(pAwayAndBack, new Style("green", "right")))
-cv.push(new DrawnPath(pInertial2, new Style("red", "right")))
 
 const mr = new Slider()
 const m = () => mr.v * 2 - 1
@@ -59,11 +57,8 @@ cv.push(mr)
 cv.push(br)
 
 const q = new Slider(() => {
-    pAwayAndBack.dv = pInertial.dv = 2 * q.v - 1
+    pAwayAndBack.dv = pInertial.dv = Math.tanh(2 * q.v - 1)
 })
+q.v = 0.5
 q.insetY = br.insetY + br.height + 4
 cv.push(q)
-
-const r = new Slider(() => (pInertial2.v0 = 2 * r.v - 1))
-r.insetY = q.insetY + q.height + 4
-cv.push(r)
