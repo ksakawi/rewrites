@@ -16,7 +16,7 @@ export class DrawnPath extends Object2 {
     draw(cv: Canvas2): void {
         drawPathTrace(cv, this.path, this.style)
         drawPathTicks(cv, this.path, this.style)
-        drawPathTickLabels(cv, this.path, this.style)
+        if (this.style.text) drawPathTickLabels(cv, this.path, this.style)
     }
 }
 
@@ -43,7 +43,7 @@ export function drawPathTicks(cv: Canvas2, path: Path, style: Style) {
     const clockMinByScreen = path.clock(apply2y(tol, height))
     const clockMaxByScreen = path.clock(apply2y(tol, 0))
 
-    const [dq, tx, tr, mq] = spacing((clockMaxByScreen - clockMinByScreen) / height)
+    const [dq, tx, , mq] = spacing((clockMaxByScreen - clockMinByScreen) / height)
 
     const qmin = Math.floor(clockMinByScreen / dq)
     const qmax = Math.ceil(clockMaxByScreen / dq)

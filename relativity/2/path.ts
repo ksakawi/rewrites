@@ -6,7 +6,7 @@ export abstract class Path {
     /** d/dt x(t). */
     abstract v(t: number): number
 
-    /** int_0^t sqrt(1 - v(t)**2) dt. */
+    /** int_C^t sqrt(1 - v(t)**2) dt, for some C. Most paths set C to 0. */
     abstract clock(t: number): number
 
     /** Inverse of `fromClock`. */
@@ -24,20 +24,20 @@ export abstract class Path {
         return solve(1e-10, (t) => t - m * this.x(t) - b)
     }
 
-    move(dx: number) {
-        return new Move(this, dx)
+    tPosition(dx: number) {
+        return new TPosition(this, dx)
     }
 
-    translate(dt: number) {
-        return new Translate(this, dt)
+    tTime(dt: number) {
+        return new TTime(this, dt)
     }
 
-    translateStableClock(dt: number) {
-        return new TranslateStableClock(this, dt)
+    tVelocity(dv: number) {
+        return new TVelocity(this, dv)
     }
 
-    shift(dv: number) {
-        return new Shift(this, dv)
+    switch(at: number, next: Path) {
+        return new Switch(this, next, at)
     }
 }
 
@@ -68,22 +68,28 @@ export class Inertial extends Path {
 }
 
 export class Accelerating extends Path {
-    static awayAndBack(a: number, timeAway: number) {
-        const switchPoint = timeAway / 4
+    static awayAndBack(a: number, SwitchPoint: number) {
         const base = new Accelerating(a)
+        const switchPoint = base.fromClock(SwitchPoint)
         return new Switch(
             new Switch(
                 new Switch(
                     new Switch(new Inertial(0), base, 0),
-                    new Accelerating(-a).translate(2 * switchPoint),
+                    new Accelerating(-a).tTime(2 * switchPoint),
                     switchPoint,
                 ),
-                base.translate(4 * switchPoint),
+                base.tTime(4 * switchPoint),
                 3 * switchPoint,
             ),
             new Inertial(0),
             4 * switchPoint,
         )
+    }
+
+    static toVelocity(a: number, v: number) {
+        return new Inertial(0)
+            .switch(0, new Accelerating(a))
+            .switch(new Accelerating(a).tFromV(v), new Inertial(v))
     }
 
     constructor(public a0: number) {
@@ -98,6 +104,10 @@ export class Accelerating extends Path {
         return Math.tanh(this.a0 * t)
     }
 
+    tFromV(v: number): number {
+        return Math.atanh(v) / this.a0
+    }
+
     clock(t: number): number {
         return Math.atan(Math.sinh(this.a0 * t)) / this.a0
     }
@@ -105,94 +115,6 @@ export class Accelerating extends Path {
     fromClock(t: number): number {
         if (Math.abs(t) > Math.PI / (2 * Math.abs(this.a0))) return NaN
         return Math.asinh(Math.tan(this.a0 * t)) / this.a0
-    }
-}
-
-export class Move<T extends Path> extends Path {
-    constructor(
-        public base: T,
-        public dx: number,
-    ) {
-        super()
-    }
-
-    x(t: number): number {
-        return this.base.x(t) + this.dx
-    }
-
-    v(t: number): number {
-        return this.base.v(t)
-    }
-
-    clock(t: number): number {
-        return this.base.clock(t)
-    }
-
-    fromClock(t: number): number {
-        return this.base.fromClock(t)
-    }
-
-    tIntersectingWith(m: number, b: number): number {
-        return this.base.tIntersectingWith(m, b + m * this.dx)
-    }
-}
-
-export class Translate<T extends Path> extends Path {
-    constructor(
-        public base: T,
-        public dt: number,
-    ) {
-        super()
-    }
-
-    x(t: number): number {
-        return this.base.x(t - this.dt)
-    }
-
-    v(t: number): number {
-        return this.base.v(t - this.dt)
-    }
-
-    clock(t: number): number {
-        return this.base.clock(t - this.dt) - this.base.clock(-this.dt)
-    }
-
-    fromClock(t: number): number {
-        return this.base.fromClock(t + this.base.clock(-this.dt)) + this.dt
-    }
-
-    tIntersectingWith(m: number, b: number): number {
-        return this.base.tIntersectingWith(m, b - this.dt) + this.dt
-    }
-}
-
-/** Not a real path. Its clock time at `t=0` is not `0`. */
-export class TranslateStableClock<T extends Path> extends Path {
-    constructor(
-        public base: T,
-        public dt: number,
-    ) {
-        super()
-    }
-
-    x(t: number): number {
-        return this.base.x(t - this.dt)
-    }
-
-    v(t: number): number {
-        return this.base.v(t - this.dt)
-    }
-
-    clock(t: number): number {
-        return this.base.clock(t - this.dt)
-    }
-
-    fromClock(t: number): number {
-        return this.base.fromClock(t) + this.dt
-    }
-
-    tIntersectingWith(m: number, b: number): number {
-        return this.base.tIntersectingWith(m, b - this.dt) + this.dt
     }
 }
 
@@ -230,7 +152,65 @@ export class Switch<A extends Path, B extends Path> extends Path {
     }
 }
 
-export class Shift<T extends Path> extends Path {
+export class TPosition<T extends Path> extends Path {
+    constructor(
+        public base: T,
+        public dx: number,
+    ) {
+        super()
+    }
+
+    x(t: number): number {
+        return this.base.x(t) + this.dx
+    }
+
+    v(t: number): number {
+        return this.base.v(t)
+    }
+
+    clock(t: number): number {
+        return this.base.clock(t)
+    }
+
+    fromClock(t: number): number {
+        return this.base.fromClock(t)
+    }
+
+    tIntersectingWith(m: number, b: number): number {
+        return this.base.tIntersectingWith(m, b + m * this.dx)
+    }
+}
+
+export class TTime<T extends Path> extends Path {
+    constructor(
+        public base: T,
+        public dt: number,
+    ) {
+        super()
+    }
+
+    x(t: number): number {
+        return this.base.x(t - this.dt)
+    }
+
+    v(t: number): number {
+        return this.base.v(t - this.dt)
+    }
+
+    clock(t: number): number {
+        return this.base.clock(t - this.dt)
+    }
+
+    fromClock(t: number): number {
+        return this.base.fromClock(t) + this.dt
+    }
+
+    tIntersectingWith(m: number, b: number): number {
+        return this.base.tIntersectingWith(m, b - this.dt) + this.dt
+    }
+}
+
+export class TVelocity<T extends Path> extends Path {
     constructor(
         public base: T,
         public dv: number,
@@ -278,9 +258,9 @@ export class SeenFrom<Them extends Path, Us extends Path> extends Path {
         const t = this.us.fromClock(T)
 
         return this.them //
-            .move(-this.us.x(t))
-            .translateStableClock(-t)
-            .shift(-this.us.v(t))
+            .tPosition(-this.us.x(t))
+            .tTime(-t)
+            .tVelocity(-this.us.v(t))
             .x(0)
     }
 
@@ -292,9 +272,9 @@ export class SeenFrom<Them extends Path, Us extends Path> extends Path {
         const t = this.us.fromClock(T)
 
         return this.them //
-            .move(-this.us.x(t))
-            .translateStableClock(-t)
-            .shift(-this.us.v(t))
+            .tPosition(-this.us.x(t))
+            .tTime(-t)
+            .tVelocity(-this.us.v(t))
             .clock(0)
     }
 
