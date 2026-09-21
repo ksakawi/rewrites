@@ -1,4 +1,5 @@
-import { solve } from "../../math/solve"
+import { quadDcg } from "../cv/2/tbd/quad"
+import { solve } from "../math/solve"
 
 export abstract class Path {
     abstract x(t: number): number
@@ -7,10 +8,14 @@ export abstract class Path {
     abstract v(t: number): number
 
     /** int_C^t sqrt(1 - v(t)**2) dt, for some C. Most paths set C to 0. */
-    abstract clock(t: number): number
+    clock(t: number): number {
+        return quadDcg((t) => Math.sqrt(1 - this.v(t) ** 2), 0, t)
+    }
 
     /** Inverse of `fromClock`. */
-    abstract fromClock(t: number): number
+    fromClock(t: number): number {
+        return solve(0.01, (x) => this.clock(x) - t)
+    }
 
     /**
      * Returns a time `t` such that `t=m*x(t)+b`, or `NaN` if no such value

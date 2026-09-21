@@ -1,6 +1,6 @@
-import { Grid } from "../../cv/2/2d-object/grid"
-import { Slider } from "../../cv/2/2d-object/slider"
-import { Canvas2 } from "../../cv/2/2d/canvas"
+import { Grid } from "../cv/2/2d-object/grid"
+import { Slider } from "../cv/2/2d-object/slider"
+import { Canvas2 } from "../cv/2/2d/canvas"
 import { Style } from "./config"
 import { DrawnPath } from "./draw"
 import { Accelerating, Inertial, Path, SeenFrom } from "./path"
@@ -10,7 +10,7 @@ cv.push(new Grid({ yText: false, yAxis: false }))
 cv.el.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh"
 document.body.appendChild(cv.el)
 
-const us = Accelerating.awayAndBack(0.5, 2.9)
+const us = Accelerating.awayAndBack(0.3, 3)
 
 const OBJECTS: [path: Path, live: Style, static_: Style][] = [
     [us, new Style("green", "right"), new Style("#4c4", "right")],
@@ -26,7 +26,7 @@ for (let i = 0; i < OBJECTS.length; i++) {
 }
 
 const slider = new Slider(({ v }) => {
-    const T = v * 14 - 1
+    const T = v * 5
     const t = us.fromClock(T)
 
     for (const el of LIVE) {
@@ -42,22 +42,22 @@ const slider = new Slider(({ v }) => {
 
 cv.push(slider)
 
-const stream = cv.el.captureStream()
-const recorder = new MediaRecorder(stream)
-recorder.start()
-recorder.ondataavailable = (ev) => {
-    const url = URL.createObjectURL(ev.data)
-    console.log(url)
-}
+// const stream = cv.el.captureStream()
+// const recorder = new MediaRecorder(stream)
+// recorder.start()
+// recorder.ondataavailable = (ev) => {
+//     const url = URL.createObjectURL(ev.data)
+//     console.log(url)
+// }
 
-const time = performance.now()
-requestAnimationFrame(function go(now) {
-    slider.v = (now - time) / 14000
-    slider.onChange?.(slider)
-    cv.redraw()
-    if (slider.v > 1) {
-        recorder.stop()
-        return
-    }
-    requestAnimationFrame(go)
-})
+// const time = performance.now()
+// requestAnimationFrame(function go(now) {
+//     slider.v = (now - time) / 14000
+//     slider.onChange?.(slider)
+//     cv.redraw()
+//     if (slider.v > 1) {
+//         recorder.stop()
+//         return
+//     }
+//     requestAnimationFrame(go)
+// })
