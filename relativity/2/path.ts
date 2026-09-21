@@ -104,6 +104,35 @@ export class Accelerating extends Path {
     }
 }
 
+export class Move<T extends Path> extends Path {
+    constructor(
+        public base: T,
+        public dx: number,
+    ) {
+        super()
+    }
+
+    x(t: number): number {
+        return this.base.x(t) + this.dx
+    }
+
+    v(t: number): number {
+        return this.base.v(t)
+    }
+
+    clock(t: number): number {
+        return this.base.clock(t)
+    }
+
+    fromClock(t: number): number {
+        return this.base.fromClock(t)
+    }
+
+    tIntersectingWith(m: number, b: number): number {
+        return this.base.tIntersectingWith(m, b + m * this.dx)
+    }
+}
+
 export class Translate<T extends Path> extends Path {
     constructor(
         public base: T,
@@ -134,6 +163,7 @@ export class Translate<T extends Path> extends Path {
     }
 }
 
+/** Not a real path. Its clock time at `t=0` is not `0`. */
 export class TranslateStableClock<T extends Path> extends Path {
     constructor(
         public base: T,
@@ -230,6 +260,10 @@ export class Shift<T extends Path> extends Path {
     }
 }
 
+/**
+ * Not a real path; it can appear faster than light-speed, and its clock times
+ * do not correspond to the integral.
+ */
 export class SeenFrom<Them extends Path, Us extends Path> extends Path {
     constructor(
         public them: Them,
@@ -238,9 +272,13 @@ export class SeenFrom<Them extends Path, Us extends Path> extends Path {
         super()
     }
 
-    x(t: number): number {
-        const T = this.us.fromClock(t)
-        return this.them.translate(-this.us.x(T), T).shift(-this.us.v(T)).x(0)
+    x(T: number): number {
+        const t = this.us.fromClock(T)
+
+        return this.them //
+            .translateStableClock(-this.us.x(t), -t)
+            .shift(-this.us.v(t))
+            .x(0)
     }
 
     v(t: number): number {
