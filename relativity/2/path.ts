@@ -28,6 +28,10 @@ export abstract class Path {
         return new Translate(this, dx, dt)
     }
 
+    translateStableClock(dx: number, dt: number) {
+        return new TranslateStableClock(this, dx, dt)
+    }
+
     shift(dv: number) {
         return new Shift(this, dv)
     }
@@ -126,9 +130,36 @@ export class Translate<T extends Path> extends Path {
     }
 
     tIntersectingWith(m: number, b: number): number {
-        // t=m*x(t)+b
-        // t-dt=m*(x(t-dt))+b+m*dx
+        return this.base.tIntersectingWith(m, b - this.dt + m * this.dx) + this.dt
+    }
+}
 
+export class TranslateStableClock<T extends Path> extends Path {
+    constructor(
+        public base: T,
+        public dx: number,
+        public dt: number,
+    ) {
+        super()
+    }
+
+    x(t: number): number {
+        return this.base.x(t - this.dt) + this.dx
+    }
+
+    v(t: number): number {
+        return this.base.v(t - this.dt)
+    }
+
+    clock(t: number): number {
+        return this.base.clock(t - this.dt)
+    }
+
+    fromClock(t: number): number {
+        return this.base.fromClock(t) + this.dt
+    }
+
+    tIntersectingWith(m: number, b: number): number {
         return this.base.tIntersectingWith(m, b - this.dt + m * this.dx) + this.dt
     }
 }
@@ -199,10 +230,10 @@ export class Shift<T extends Path> extends Path {
     }
 }
 
-export class SeenFrom<Us extends Path, Them extends Path> extends Path {
+export class SeenFrom<Them extends Path, Us extends Path> extends Path {
     constructor(
-        public us: Us,
         public them: Them,
+        public us: Us,
     ) {
         super()
     }
@@ -216,11 +247,16 @@ export class SeenFrom<Us extends Path, Them extends Path> extends Path {
         return (this.x(t + 0.001) - this.x(t)) / 0.001
     }
 
-    clock(t: number): number {
-        return t
+    clock(T: number): number {
+        const t = this.us.fromClock(T)
+
+        return this.them //
+            .translateStableClock(-this.us.x(t), -t)
+            .shift(-this.us.v(t))
+            .clock(0)
     }
 
     fromClock(t: number): number {
-        return t
+        return solve(1e-8, (x) => this.clock(x) - t)
     }
 }

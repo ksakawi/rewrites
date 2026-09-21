@@ -2,11 +2,11 @@ import type { Canvas2 } from "../2d/canvas"
 import { Object2, type PEvent } from "../2d/object"
 
 export class Slider extends Object2 {
-    public v = 1
-
     constructor(public onChange?: (x: Slider) => void) {
         super()
     }
+
+    public v = 0
 
     public width = 196
     public height = 32
