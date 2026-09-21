@@ -24,12 +24,16 @@ export abstract class Path {
         return solve(1e-10, (t) => t - m * this.x(t) - b)
     }
 
-    translate(dx: number, dt: number) {
-        return new Translate(this, dx, dt)
+    move(dx: number) {
+        return new Move(this, dx)
     }
 
-    translateStableClock(dx: number, dt: number) {
-        return new TranslateStableClock(this, dx, dt)
+    translate(dt: number) {
+        return new Translate(this, dt)
+    }
+
+    translateStableClock(dt: number) {
+        return new TranslateStableClock(this, dt)
     }
 
     shift(dv: number) {
@@ -71,10 +75,10 @@ export class Accelerating extends Path {
             new Switch(
                 new Switch(
                     new Switch(new Inertial(0), base, 0),
-                    new Translate(new Accelerating(-a), 0, 2 * switchPoint),
+                    new Accelerating(-a).translate(2 * switchPoint),
                     switchPoint,
                 ),
-                new Translate(base, 0, 4 * switchPoint),
+                base.translate(4 * switchPoint),
                 3 * switchPoint,
             ),
             new Inertial(0),
@@ -136,14 +140,13 @@ export class Move<T extends Path> extends Path {
 export class Translate<T extends Path> extends Path {
     constructor(
         public base: T,
-        public dx: number,
         public dt: number,
     ) {
         super()
     }
 
     x(t: number): number {
-        return this.base.x(t - this.dt) + this.dx
+        return this.base.x(t - this.dt)
     }
 
     v(t: number): number {
@@ -159,7 +162,7 @@ export class Translate<T extends Path> extends Path {
     }
 
     tIntersectingWith(m: number, b: number): number {
-        return this.base.tIntersectingWith(m, b - this.dt + m * this.dx) + this.dt
+        return this.base.tIntersectingWith(m, b - this.dt) + this.dt
     }
 }
 
@@ -167,14 +170,13 @@ export class Translate<T extends Path> extends Path {
 export class TranslateStableClock<T extends Path> extends Path {
     constructor(
         public base: T,
-        public dx: number,
         public dt: number,
     ) {
         super()
     }
 
     x(t: number): number {
-        return this.base.x(t - this.dt) + this.dx
+        return this.base.x(t - this.dt)
     }
 
     v(t: number): number {
@@ -190,7 +192,7 @@ export class TranslateStableClock<T extends Path> extends Path {
     }
 
     tIntersectingWith(m: number, b: number): number {
-        return this.base.tIntersectingWith(m, b - this.dt + m * this.dx) + this.dt
+        return this.base.tIntersectingWith(m, b - this.dt) + this.dt
     }
 }
 
@@ -276,7 +278,8 @@ export class SeenFrom<Them extends Path, Us extends Path> extends Path {
         const t = this.us.fromClock(T)
 
         return this.them //
-            .translateStableClock(-this.us.x(t), -t)
+            .move(-this.us.x(t))
+            .translateStableClock(-t)
             .shift(-this.us.v(t))
             .x(0)
     }
@@ -289,7 +292,8 @@ export class SeenFrom<Them extends Path, Us extends Path> extends Path {
         const t = this.us.fromClock(T)
 
         return this.them //
-            .translateStableClock(-this.us.x(t), -t)
+            .move(-this.us.x(t))
+            .translateStableClock(-t)
             .shift(-this.us.v(t))
             .clock(0)
     }
