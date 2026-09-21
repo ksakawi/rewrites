@@ -27,6 +27,10 @@ export abstract class Path {
     translate(dx: number, dt: number) {
         return new Translate(this, dx, dt)
     }
+
+    shift(dv: number) {
+        return new Shift(this, dv)
+    }
 }
 
 export class Inertial extends Path {
@@ -192,5 +196,31 @@ export class Shift<T extends Path> extends Path {
         const tBase = this.base.fromClock(t)
         const xBase = this.base.x(tBase)
         return (tBase + this.dv * xBase) / Math.sqrt(1 - this.dv ** 2)
+    }
+}
+
+export class SeenFrom<Us extends Path, Them extends Path> extends Path {
+    constructor(
+        public us: Us,
+        public them: Them,
+    ) {
+        super()
+    }
+
+    x(t: number): number {
+        const T = this.us.fromClock(t)
+        return this.them.translate(-this.us.x(T), T).shift(-this.us.v(T)).x(0)
+    }
+
+    v(t: number): number {
+        return (this.x(t + 0.001) - this.x(t)) / 0.001
+    }
+
+    clock(t: number): number {
+        return t
+    }
+
+    fromClock(t: number): number {
+        return t
     }
 }
