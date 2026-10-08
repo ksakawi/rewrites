@@ -10,7 +10,8 @@ cv.push(new Grid({ yText: false, yAxis: false }))
 cv.el.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh"
 document.body.appendChild(cv.el)
 
-const us = Accelerating.awayAndBack(0.3, 3)
+// const us = Accelerating.awayAndBack(0.3, 5)
+const us = new Accelerating(0.3)
 
 const OBJECTS: [path: Path, live: Style, static_: Style][] = [
     [us, new Style("green", "right"), new Style("#4c4", "right")],
@@ -26,7 +27,7 @@ for (let i = 0; i < OBJECTS.length; i++) {
 }
 
 const slider = new Slider(({ v }) => {
-    const T = v * 5
+    const T = v * 12
     const t = us.fromClock(T)
 
     for (const el of LIVE) {
