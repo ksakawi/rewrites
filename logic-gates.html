@@ -1,0 +1,192 @@
+<html>
+    <body>
+        <style>
+            main {
+                display: grid;
+                grid-template-columns: repeat(4, 100px);
+                grid-template-rows: repeat(4, 100px);
+                gap: 4px;
+            }
+
+            div {
+                display: contents;
+            }
+
+            html {
+                background: #800;
+            }
+
+            .m00 .p00 {
+                fill: red;
+            }
+
+            .m01 .p01 {
+                fill: red;
+            }
+
+            .m10 .p10 {
+                fill: red;
+            }
+
+            .m11 .p11 {
+                fill: red;
+            }
+
+            /*.sl-full,
+            .sr-full {
+                stroke: black;
+            }
+
+            span:not([class]),
+            span[class="m00"],
+            span[class="m10"],
+            span[class="m01"],
+            span[class="m11"] {
+                .sl-full,
+                .sr-full {
+                    stroke: red;
+                }
+            }
+
+            span[class="m01 m11"] {
+                .sl-large {
+                    stroke: red;
+                }
+
+                .sr-small {
+                    stroke: black;
+                }
+
+                .sl-full {
+                    stroke: none;
+                }
+            }
+
+            span[class="m10 m11"] {
+                .sr-large {
+                    stroke: red;
+                }
+
+                .sl-small {
+                    stroke: black;
+                }
+
+                .sr-full {
+                    stroke: none;
+                }
+            }
+
+            span[class="m00 m01"] {
+                .sr-full {
+                    stroke: none;
+                }
+
+                .sl-small {
+                    stroke: red;
+                }
+
+                .sr-large {
+                    stroke: black;
+                }
+
+                .sl-full {
+                    stroke: red;
+                }
+            }
+
+            span[class="m00 m10"] {
+                .sl-full {
+                    stroke: none;
+                }
+
+                .sr-small {
+                    stroke: red;
+                }
+
+                .sl-large {
+                    stroke: black;
+                }
+
+                .sr-full {
+                    stroke: red;
+                }
+            }*/
+        </style>
+        <svg id="svg" viewBox="0 0 100 100">
+            <path class="p00" d="m 0 0 h 100 v 100 h -100" />
+            <path class="p01" d="m 50 75.98 a 30 30 0 0 0 0 -51.96 a 30 30 0 1 1 0 51.96" />
+            <path class="p11" d="m 50 75.98 a 30 30 0 0 1 0 -51.96 a 30 30 0 0 1 0 51.96" />
+            <path class="p10" d="m 50 24.02 a 30 30 0 0 0 0 51.96 a 30 30 0 1 1 0 -51.96" />
+            <path
+                d="m 50 24.02 a 30 30 0 0 0 0 51.96"
+                fill="none"
+                stroke-width="1"
+                class="sl-small"
+            />
+            <path
+                d="m 50 24.02 a 30 30 0 0 1 0 51.96"
+                fill="none"
+                stroke-width="1"
+                class="sr-small"
+            />
+            <path
+                d="m 50 24.02 a 30 30 0 1 0 0 51.96"
+                fill="none"
+                stroke-width="1"
+                class="sl-large"
+            />
+            <path
+                d="m 50 24.02 a 30 30 0 1 1 0 51.96"
+                fill="none"
+                stroke-width="1"
+                class="sr-large"
+            />
+            <path
+                d="m 50 24.02 a 30 30 0 0 0 0 51.96 a 30 30 0 1 0 0 -51.96"
+                fill="none"
+                stroke-width="1"
+                class="sr-full"
+            />
+            <path
+                d="m 50 24.02 a 30 30 0 1 0 0 51.96 a 30 30 0 0 0 0 -51.96"
+                fill="none"
+                stroke-width="1"
+                class="sl-full"
+            />
+        </svg>
+        <main>
+            <div>
+                <span></span>
+                <span class="m01"></span>
+                <span class="m00"></span>
+                <span class="m00 m01"></span>
+            </div>
+            <div>
+                <span class="m10"></span>
+                <span class="m01 m10"></span>
+                <span class="m00 m10"></span>
+                <span class="m00 m01 m10"></span>
+            </div>
+            <div>
+                <span class="m11"></span>
+                <span class="m01 m11"></span>
+                <span class="m00 m11"></span>
+                <span class="m00 m01 m11"></span>
+            </div>
+            <div>
+                <span class="m10 m11"></span>
+                <span class="m01 m10 m11"></span>
+                <span class="m00 m10 m11"></span>
+                <span class="m00 m01 m10 m11"></span>
+            </div>
+        </main>
+        <script>
+            document.querySelectorAll("span").forEach((s) => {
+                const mine = svg.cloneNode(true)
+                mine.removeAttribute("id")
+                s.appendChild(mine)
+            })
+            svg.remove()
+        </script>
+    </body>
+</html>
